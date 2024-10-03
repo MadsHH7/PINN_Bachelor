@@ -94,9 +94,9 @@ def run(cfg: ModulusConfig) -> None:
     no_slip = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry=rec,
-        outvar={"u": 0, "v": 1.0},
+        outvar={"u": 0, "v": 0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria=Eq(x, width / 2),
+        # criteria=Eq(x, width / 2),
     )
     Rect_domain.add_constraint(no_slip, "no_slip")
 
