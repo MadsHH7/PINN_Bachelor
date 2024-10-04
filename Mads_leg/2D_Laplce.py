@@ -41,30 +41,35 @@ class LaplaceEquation(PDE):
     """
     name = "LaplaceEquation"
 
-    def __init__(self, u="u", dim=3):
+    def __init__(self, dim=2):
         # Set params
-        self.u = u
         self.dim = dim
 
         # Coordinates
-        x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
+        x, y = Symbol("x"), Symbol("y")
 
         # Make input variables
-        input_variables = {"x": x, "y": y, "z": z}
+        input_variables = {"x": x, "y": y}
         if self.dim == 1:
             input_variables.pop("y")
-            input_variables.pop("z")
-        elif self.dim == 2:
-            input_variables.pop("z")
 
-        # Scalar function
+        # Velocity components
         assert type(u) == str
+        f = Function(f)(*input_variables)
         u = Function(u)(*input_variables)
+        v = Function(v)(*input_variables)
+
 
         # Set equations
         self.equations = {}
         self.equations["laplace_equation"] = (
-            u.diff(x, 2) + u.diff(y, 2) + u.diff(z, 2)
+            f.diff(x, 2) + f.diff(y, 2)
+        )
+        self.equations["continuity"] = (
+            u.diff(x) + v.diff(y)
+        )
+        self.equations["irrotational"] = (
+            v.diff(x) - u.diff(y)
         )
 
 
@@ -91,58 +96,67 @@ def run(cfg: ModulusConfig) -> None:
     Rect_domain = Domain()
 
     # No slip condition
-    no_slip = PointwiseBoundaryConstraint(
+    no_slip1 = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry=rec,
         outvar={"u": 0, "v": 0},
         batch_size=cfg.batch_size.NoSlip,
-        # criteria=Eq(x, width / 2),
+        criteria=Eq(x, width / 2),
     )
-    Rect_domain.add_constraint(no_slip, "no_slip")
+    Rect_domain.add_constraint(no_slip1, "no_slip1")
+    
+    no_slip2 = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry=rec,
+        outvar={"u": 0, "v": 0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria=Eq(x, -width / 2),
+    )
+    Rect_domain.add_constraint(no_slip2, "no_slip2")
 
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=rec,
-        outvar={"laplace_equation": 0},
+        outvar={"continuity": 0, "irrotational": 0},
         batch_size=cfg.batch_size.Interior,
     )
     Rect_domain.add_constraint(interior, "interior")
 
-    # add validator
-    file_path = "openfoam/cavity_uniformVel0.csv"
-    if os.path.exists(to_absolute_path(file_path)):
-        mapping = {"Points:0": "x", "Points:1": "y", "U:0": "u", "U:1": "v", "p": "p"}
-        openfoam_var = csv_to_dict(to_absolute_path(file_path), mapping)
-        openfoam_var["x"] += -width / 2  # center OpenFoam data
-        openfoam_var["y"] += -height / 2  # center OpenFoam data
-        openfoam_invar_numpy = {
-            key: value for key, value in openfoam_var.items() if key in ["x", "y"]
-        }
-        openfoam_outvar_numpy = {
-            key: value for key, value in openfoam_var.items() if key in ["u", "v"]
-        }
-        openfoam_validator = PointwiseValidator(
-            nodes=nodes,
-            invar=openfoam_invar_numpy,
-            true_outvar=openfoam_outvar_numpy,
-            batch_size=1024,
-            plotter=ValidatorPlotter(),
-        )
-        Rect_domain.add_validator(openfoam_validator)
+    # # add validator
+    # file_path = "openfoam/cavity_uniformVel0.csv"
+    # if os.path.exists(to_absolute_path(file_path)):
+    #     mapping = {"Points:0": "x", "Points:1": "y", "U:0": "u", "U:1": "v", "p": "p"}
+    #     openfoam_var = csv_to_dict(to_absolute_path(file_path), mapping)
+    #     openfoam_var["x"] += -width / 2  # center OpenFoam data
+    #     openfoam_var["y"] += -height / 2  # center OpenFoam data
+    #     openfoam_invar_numpy = {
+    #         key: value for key, value in openfoam_var.items() if key in ["x", "y"]
+    #     }
+    #     openfoam_outvar_numpy = {
+    #         key: value for key, value in openfoam_var.items() if key in ["u", "v"]
+    #     }
+    #     openfoam_validator = PointwiseValidator(
+    #         nodes=nodes,
+    #         invar=openfoam_invar_numpy,
+    #         true_outvar=openfoam_outvar_numpy,
+    #         batch_size=1024,
+    #         plotter=ValidatorPlotter(),
+    #     )
+    #     Rect_domain.add_validator(openfoam_validator)
 
-        # add inferencer data
-        grid_inference = PointwiseInferencer(
-            nodes=nodes,
-            invar=openfoam_invar_numpy,
-            output_names=["u", "v", "p"],
-            batch_size=1024,
-            plotter=InferencerPlotter(),
-        )
-        Rect_domain.add_inferencer(grid_inference, "inf_data")
-    else:
-        warnings.warn(
-            f"Directory {file_path} does not exist. Will skip adding validators. Please download the additional files from NGC https://catalog.ngc.nvidia.com/orgs/nvidia/teams/modulus/resources/modulus_sym_examples_supplemental_materials"
-        )
+    #     # add inferencer data
+    #     grid_inference = PointwiseInferencer(
+    #         nodes=nodes,
+    #         invar=openfoam_invar_numpy,
+    #         output_names=["u", "v", "p"],
+    #         batch_size=1024,
+    #         plotter=InferencerPlotter(),
+    #     )
+    #     Rect_domain.add_inferencer(grid_inference, "inf_data")
+    # else:
+    #     warnings.warn(
+    #         f"Directory {file_path} does not exist. Will skip adding validators. Please download the additional files from NGC https://catalog.ngc.nvidia.com/orgs/nvidia/teams/modulus/resources/modulus_sym_examples_supplemental_materials"
+    #     )
 
     # Make solver
     slv = Solver(cfg, Rect_domain)
