@@ -1,5 +1,5 @@
 import numpy as np
-from sympy import Symbol, Function, Number, Eq
+from sympy import Symbol, Function, Number, Eq, Abs
 
 import modulus.sym
 from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
@@ -54,17 +54,11 @@ class LaplaceEquation(PDE):
             input_variables.pop("y")
 
         # Velocity components
-        assert type(u) == str
-        f = Function(f)(*input_variables)
-        u = Function(u)(*input_variables)
-        v = Function(v)(*input_variables)
-
+        u = Function("u")(*input_variables)
+        v = Function("v")(*input_variables)
 
         # Set equations
         self.equations = {}
-        self.equations["laplace_equation"] = (
-            f.diff(x, 2) + f.diff(y, 2)
-        )
         self.equations["continuity"] = (
             u.diff(x) + v.diff(y)
         )
@@ -114,49 +108,28 @@ def run(cfg: ModulusConfig) -> None:
     )
     Rect_domain.add_constraint(no_slip2, "no_slip2")
 
+    # Inlet
+    Inlet = PointwiseBoundaryConstraint(
+        nodes=nodes,
+        geometry=rec,
+        outvar={"u": 0.0, "v": 1.0},
+        batch_size=cfg.batch_size.Inlet,
+        # lambda_weighting={"u": 1.0 - 2 * Abs(x), "v": 1.0},  # weight edges to be zero
+        criteria=Eq(y, -height/2),
+    )
+    Rect_domain.add_constraint(Inlet, "inlet")
+    
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=rec,
-        outvar={"continuity": 0, "irrotational": 0},
+        outvar={"continuity": 0, "irrotational": 0}, 
         batch_size=cfg.batch_size.Interior,
+        lambda_weighting={
+            "continuity": Symbol("sdf"),
+            "irrotational": Symbol("sdf"),
+        },
     )
     Rect_domain.add_constraint(interior, "interior")
-
-    # # add validator
-    # file_path = "openfoam/cavity_uniformVel0.csv"
-    # if os.path.exists(to_absolute_path(file_path)):
-    #     mapping = {"Points:0": "x", "Points:1": "y", "U:0": "u", "U:1": "v", "p": "p"}
-    #     openfoam_var = csv_to_dict(to_absolute_path(file_path), mapping)
-    #     openfoam_var["x"] += -width / 2  # center OpenFoam data
-    #     openfoam_var["y"] += -height / 2  # center OpenFoam data
-    #     openfoam_invar_numpy = {
-    #         key: value for key, value in openfoam_var.items() if key in ["x", "y"]
-    #     }
-    #     openfoam_outvar_numpy = {
-    #         key: value for key, value in openfoam_var.items() if key in ["u", "v"]
-    #     }
-    #     openfoam_validator = PointwiseValidator(
-    #         nodes=nodes,
-    #         invar=openfoam_invar_numpy,
-    #         true_outvar=openfoam_outvar_numpy,
-    #         batch_size=1024,
-    #         plotter=ValidatorPlotter(),
-    #     )
-    #     Rect_domain.add_validator(openfoam_validator)
-
-    #     # add inferencer data
-    #     grid_inference = PointwiseInferencer(
-    #         nodes=nodes,
-    #         invar=openfoam_invar_numpy,
-    #         output_names=["u", "v", "p"],
-    #         batch_size=1024,
-    #         plotter=InferencerPlotter(),
-    #     )
-    #     Rect_domain.add_inferencer(grid_inference, "inf_data")
-    # else:
-    #     warnings.warn(
-    #         f"Directory {file_path} does not exist. Will skip adding validators. Please download the additional files from NGC https://catalog.ngc.nvidia.com/orgs/nvidia/teams/modulus/resources/modulus_sym_examples_supplemental_materials"
-    #     )
 
     # Make solver
     slv = Solver(cfg, Rect_domain)
