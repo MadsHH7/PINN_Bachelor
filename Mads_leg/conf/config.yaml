@@ -35,7 +35,7 @@ training:
 
 batch_size:
   NoSlip: 1000
-  Interior: 4000
+  Interior: 5000
   Inlet: 1000
 
 graph:

@@ -9,6 +9,7 @@ from modulus.sym.geometry.primitives_2d import Rectangle
 from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
     PointwiseInteriorConstraint,
+    IntegralBoundaryConstraint,
 )
 from modulus.sym.key import Key
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
@@ -81,7 +82,7 @@ def run(cfg: ModulusConfig) -> None:
     nodes = lp.make_nodes() + [flow_net.make_node(name="flow_network")]
 
     # Make geometry
-    height = 1
+    height = 1.0
     width = 0.5
     x, y = Symbol("x"), Symbol("y")
     rec = Rectangle((-width / 2, -height / 2), (width / 2, height / 2))
@@ -116,11 +117,22 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 1.0, "v": 1.0 - 2 * Abs(x)},  # weight edges to be zero
+        lambda_weighting={"u": 1.0, "v": 1.0 - 4.0 * Abs(x)},  # weight to be zero at the corners
         criteria= Eq(y, -height/2),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
     
+    # Outlet
+    Outlet = PointwiseBoundaryConstraint(
+        nodes=nodes,
+        geometry=rec,
+        outvar={"u": 0.0, "v": 1.0},
+        batch_size=cfg.batch_size.Inlet,
+        lambda_weighting={"u": 1.0, "v": 1.0 - 4.0 * Abs(x)},  # weight to be zero at the corners
+        criteria= Eq(y, height/2),
+    )
+    Rect_domain.add_constraint(Outlet, "outlet")
+
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=rec,
