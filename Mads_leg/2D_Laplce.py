@@ -14,15 +14,15 @@ from modulus.sym.key import Key
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pde import PDE
 
-import os
-import warnings
-from modulus.sym.utils.io import (
-    csv_to_dict,
-    ValidatorPlotter,
-    InferencerPlotter,
-)
-from modulus.sym.domain.validator import PointwiseValidator
-from modulus.sym.domain.inferencer import PointwiseInferencer
+# import os
+# import warnings
+# from modulus.sym.utils.io import (
+#     csv_to_dict,
+#     ValidatorPlotter,
+#     InferencerPlotter,
+# )
+# from modulus.sym.domain.validator import PointwiseValidator
+# from modulus.sym.domain.inferencer import PointwiseInferencer
 
 class LaplaceEquation(PDE):
     """
@@ -60,10 +60,10 @@ class LaplaceEquation(PDE):
         # Set equations
         self.equations = {}
         self.equations["continuity"] = (
-            u.diff(x) + v.diff(y)
+            u.diff(x, 1) + v.diff(y, 1)
         )
         self.equations["irrotational"] = (
-            v.diff(x) - u.diff(y)
+            v.diff(x, 1) - u.diff(y, 1)
         )
 
 
@@ -90,23 +90,25 @@ def run(cfg: ModulusConfig) -> None:
     Rect_domain = Domain()
 
     # No slip condition
-    no_slip1 = PointwiseBoundaryConstraint(
+    no_slip_right = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry=rec,
-        outvar={"u": 0, "v": 0},
+        geometry = rec,
+        outvar={"u": 0.0, "v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria=Eq(x, width / 2),
+        lambda_weighting={"u": 1.0, "v": 1.0},
+        criteria= Eq(x, width / 2),
     )
-    Rect_domain.add_constraint(no_slip1, "no_slip1")
+    Rect_domain.add_constraint(no_slip_right, "no_slip_right")
     
-    no_slip2 = PointwiseBoundaryConstraint(
+    no_slip_left = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry=rec,
-        outvar={"u": 0, "v": 0},
+        geometry = rec,
+        outvar={"u": 0.0, "v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria=Eq(x, -width / 2),
+        lambda_weighting={"u": 1.0, "v": 1.0},
+        criteria= Eq(x, -width / 2),
     )
-    Rect_domain.add_constraint(no_slip2, "no_slip2")
+    Rect_domain.add_constraint(no_slip_left, "no_slip_left")
 
     # Inlet
     Inlet = PointwiseBoundaryConstraint(
@@ -114,8 +116,8 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        # lambda_weighting={"u": 1.0 - 2 * Abs(x), "v": 1.0},  # weight edges to be zero
-        criteria=Eq(y, -height/2),
+        lambda_weighting={"u": 2.0, "v": 1.0 - 2 * Abs(x)},  # weight edges to be zero
+        criteria= Eq(y, -height/2),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
     
