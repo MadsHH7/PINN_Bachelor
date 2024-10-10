@@ -116,7 +116,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 2.0, "v": 1.0 - 2 * Abs(x)},  # weight edges to be zero
+        lambda_weighting={"u": 1.0, "v": 1.0 - 2 * Abs(x)},  # weight edges to be zero
         criteria= Eq(y, -height/2),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
