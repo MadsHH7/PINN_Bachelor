@@ -95,7 +95,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec,
         outvar={"u": 0.0, "v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        lambda_weighting={"u": 1.0, "v": 1.0},
+        # lambda_weighting={"u": 1.0, "v": 1.0},
         criteria= Eq(x, width / 2),
     )
     Rect_domain.add_constraint(no_slip_right, "no_slip_right")
@@ -105,7 +105,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec,
         outvar={"u": 0.0, "v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        lambda_weighting={"u": 1.0, "v": 1.0},
+        # lambda_weighting={"u": 1.0, "v": 1.0},
         criteria= Eq(x, -width / 2),
     )
     Rect_domain.add_constraint(no_slip_left, "no_slip_left")
