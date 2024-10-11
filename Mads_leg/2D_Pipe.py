@@ -1,5 +1,5 @@
 import numpy as np
-from sympy import Symbol, Function, Number, Eq, Abs
+from sympy import Symbol, Eq, Abs, And, sin, cos, pi
 import math
 
 import modulus.sym
@@ -12,61 +12,10 @@ from modulus.sym.domain.constraint import (
     PointwiseInteriorConstraint,
 )
 from modulus.sym.key import Key
-from modulus.sym.eq.pde import PDE
 
+from Laplace_EQ import LaplaceEquation
 
-class LaplaceEquation(PDE):
-    """
-    Laplace Equation
-
-    Parameters
-    ==========
-    p : float describing pressure [Pa]
-    
-    rho : float describing density of the fluid
-
-    c : float describing the constant pressure we wish to apply
-
-    dim : int describing dimension    
-
-    Examples
-    ========
-    >>> we = 
-    >>> we.
-    """
-    name = "LaplaceEquation"
-
-    def __init__(self, rho=1, c=1.5, dim=2):
-        # Set params
-        self.dim = dim
-
-        # Coordinates
-        x, y = Symbol("x"), Symbol("y")
-
-        # Make input variables
-        input_variables = {"x": x, "y": y}
-        if self.dim == 1:
-            input_variables.pop("y")
-
-        # Velocity components
-        u = Function("u")(*input_variables)
-        v = Function("v")(*input_variables)
-        
-        # Pressure component
-        p = Function("p")(*input_variables)
-        
-        # Set equations
-        self.equations = {}
-        self.equations["continuity"] = (
-            u.diff(x, 1) + v.diff(y, 1)
-        )
-        self.equations["irrotational"] = (
-            v.diff(x, 1) - u.diff(y, 1)
-        )
-        self.equations["bernoulli"] = (
-            ((u**2 + v**2)**(0.5) / 2) + p/rho - c
-        )
-
+pi = float(pi)
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -95,7 +44,7 @@ def run(cfg: ModulusConfig) -> None:
     # Define and cut our circle
     center = (0.5, 1.0)     # Center of the circle
     radius = 0.5            # Radius of the circle
-    circ1 = Circle(center = (0.5, 1.0), radius = 0.5)
+    circ1 = Circle(center = center, radius = radius)
     cut_rect = Rectangle((0.0, 1.0), (0.5, 1.5))    # Define our cut rectangle to be the point where our other pipe ends, and the upper right hand corner we wish to end at
 
     circle = circ1 & cut_rect
@@ -107,7 +56,7 @@ def run(cfg: ModulusConfig) -> None:
     bend = rec_inner - cut_circ
 
     # Add all the geometries
-    Pipe = rec1 + rec2 + circle #+ bend
+    Pipe = rec1 + circle + rec2 #+ bend
 
     # Make domain
     Pipe_domain = Domain()
@@ -118,7 +67,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec1,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 1.0, "v": 1.0 - 4.0 * Abs(x)},  # weight edges to be zero
+        lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Pipe_domain.add_constraint(Inlet, "inlet")
@@ -129,7 +78,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        parameterization= {x: 0, y: (0, 1.0)},
+        criteria=Eq(x, 0.0),
     )
     Pipe_domain.add_constraint(Inlet_pipe_left, "IP_left")
     
@@ -138,17 +87,17 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        parameterization= {x: 0.5, y: (0, 0.875)},
+        criteria= Eq(x, 0.5) # y: (0, 0.875)
     )
     Pipe_domain.add_constraint(Inlet_pipe_right, "IP_right")
 
     # Define the boundaries for our bend
     Inner_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry = circle,
-        outvar= {"u": 0.0},
+        geometry = Pipe,
+        outvar= {"normal_circle": 0},
         batch_size=cfg.batch_size.NoSlip,
-        parameterization= {x: (0.0, 0.5), y: (1.0, 1.5)}
+        criteria= And((x<=0.5), (y >= 1.0))
     )
     Pipe_domain.add_constraint(Inner_bend, "inner_bend")
     
@@ -158,7 +107,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= rec2,
         outvar= {"v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        parameterization= {x: (0.5, 1.5), y: 1.5}
+        criteria=Eq(y, 1.5)
     )
     Pipe_domain.add_constraint(Outlet_pipe_upper, "OP_upper")
     
@@ -167,7 +116,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= rec2,
         outvar= {"v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        parameterization= {x: (0.625, 1.5), y: 1.0}
+        criteria= Eq(y, 1.0)
     )
     Pipe_domain.add_constraint(Outlet_pipe_lower, "OP_lower")
     

@@ -1,6 +1,5 @@
 import numpy as np
-from sympy import Symbol, Function, Number, Eq, Abs
-import math
+from sympy import Symbol, Function, Number, Eq, Abs, cos, pi
 
 import modulus.sym
 from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
@@ -14,6 +13,7 @@ from modulus.sym.domain.constraint import (
 from modulus.sym.key import Key
 from modulus.sym.eq.pde import PDE
 
+pi = float(pi)
 
 class LaplaceEquation(PDE):
     """
@@ -120,7 +120,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec1,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 1.0, "v": 1.0 - 4.0 * Abs(x)},  # weight edges to be zero
+        lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*pi*x)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
