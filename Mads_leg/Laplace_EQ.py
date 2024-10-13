@@ -54,5 +54,5 @@ class LaplaceEquation(PDE):
             ((u**2 + v**2)**(0.5) / 2) + p/rho - c
         )
         self.equations["normal_circle"] = (
-            ((u**2 + v**2)**(0.5) / 2) * x
+            (((x*u)**2 + (y*v)**2)**(0.5) / 2)
         )

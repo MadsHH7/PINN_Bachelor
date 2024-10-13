@@ -141,3 +141,5 @@ def run(cfg: ModulusConfig) -> None:
 
 if __name__ == "__main__":
     run()
+    # for paraview
+    # u*iHat + v*jHat
