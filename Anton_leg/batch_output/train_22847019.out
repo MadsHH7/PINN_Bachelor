@@ -1,0 +1,69 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 22847019: <train> in cluster <dcc> Exited
+
+Job <train> was submitted from host <hpclogin1> by user <s214728> in cluster <dcc> at Fri Oct  4 12:06:28 2024
+Job was executed on host(s) <4*n-62-20-11>, in queue <gpuv100>, as user <s214728> in cluster <dcc> at Fri Oct  4 13:12:58 2024
+</zhome/e3/5/167986> was used as the home directory.
+</zhome/e3/5/167986/Desktop/Bachelor PINNS/2D Laplace> was used as the working directory.
+Started at Fri Oct  4 13:12:58 2024
+Terminated at Fri Oct  4 13:13:00 2024
+Results reported at Fri Oct  4 13:13:00 2024
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/sh
+### General options
+### -- specify queue --
+#BSUB -q gpuv100
+### -- set the job Name --
+#BSUB -J train
+### -- ask for number of cores (default: 1) --
+#BSUB -n 4
+### -- Select the resources: 1 gpu in exclusive process mode --
+#BSUB -gpu "num=1:mode=exclusive_process"
+### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
+#BSUB -W 00:01
+# specify system resources  
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=0.5GB]"
+### -- Specify the output and error file. %J is the job-id --
+### -- -o and -e mean append, -oo and -eo mean overwrite --
+#BSUB -o batch_output/train_%J.out
+#BSUB -e batch_output/train_%J.err
+# -- end of LSF options --
+
+cd ..
+module load cuda/12.6.1  python3/3.10.13
+source PINN/bin/activate
+cd /2D\ Laplace
+python -u laplace2dDoc.py
+
+------------------------------------------------------------
+
+Exited with exit code 2.
+
+Resource usage summary:
+
+    CPU time :                                   0.48 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     2048.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   3 sec.
+    Turnaround time :                            3992 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <batch_output/train_22847019.err> for stderr output of this job.
+
