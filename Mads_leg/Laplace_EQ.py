@@ -53,6 +53,9 @@ class LaplaceEquation(PDE):
         self.equations["bernoulli"] = (
             ((u**2 + v**2)**(0.5) / 2) + p/rho - c
         )
-        self.equations["normal_circle"] = (
-            (((x*u)**2 + (y*v)**2)**(0.5) / 2)
+        self.equations["normal_circle_outer"] = (
+            (u * (0.5 - x) + v * (1.0 - y)) / 0.5
+        )
+        self.equations["normal_circle_inner"] = (
+            -(u * (0.625 - x) + v * (0.875 - y)) / 0.125
         )

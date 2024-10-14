@@ -1,6 +1,5 @@
 import numpy as np
-from sympy import Symbol, Eq, Abs, And, sin, cos, pi
-import math
+from sympy import Symbol, Function, Number, Eq, Abs, cos, pi, And
 
 import modulus.sym
 from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
@@ -13,9 +12,13 @@ from modulus.sym.domain.constraint import (
 )
 from modulus.sym.key import Key
 
+
 from Laplace_EQ import LaplaceEquation
 
+
 pi = float(pi)
+
+
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -36,10 +39,12 @@ def run(cfg: ModulusConfig) -> None:
     x, y = Symbol("x"), Symbol("y")
     
     # Define inlet pipe
-    rec1 = Rectangle((0.0, 0.0), (0.5, 1.0))
+    origen_inlet = (0.0, 0.0)
+    rec1 = Rectangle(origen_inlet, (origen_inlet[0] + width, origen_inlet[1] + height))
     
     # Define our outlet pipe, swap height and width
-    rec2 = Rectangle((0.5, 1.0), (1.5, 1.5))
+    origen_outlet = (0.5, 1.0)
+    rec2 = Rectangle(origen_outlet, (origen_outlet[0] + height, origen_outlet[1] + width))
     
     # Define and cut our circle
     center = (0.5, 1.0)     # Center of the circle
@@ -56,7 +61,7 @@ def run(cfg: ModulusConfig) -> None:
     bend = rec_inner - cut_circ
 
     # Add all the geometries
-    Pipe = rec1 + circle + rec2 #+ bend
+    Pipe = rec1 + circle + rec2 + bend
 
     # Make domain
     Pipe_domain = Domain()
@@ -71,6 +76,17 @@ def run(cfg: ModulusConfig) -> None:
         criteria= Eq(y, 0.0),
     )
     Pipe_domain.add_constraint(Inlet, "inlet")
+    
+    # Outlet
+    Outlet = PointwiseBoundaryConstraint(
+        nodes=nodes,
+        geometry=rec2,
+        outvar={"p": 0},
+        batch_size=cfg.batch_size.Inlet,
+        # lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*x*pi)**2},  # weight edges to be zero
+        criteria= Eq(x, 1.5),
+    )
+    Pipe_domain.add_constraint(Outlet, "outlet")
     
     # Define no penetration in inlet pipe
     Inlet_pipe_left = PointwiseBoundaryConstraint(
@@ -87,17 +103,26 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= Eq(x, 0.5) # y: (0, 0.875)
+        criteria= And(Eq(x, 0.5), y <= 0.875)
     )
     Pipe_domain.add_constraint(Inlet_pipe_right, "IP_right")
 
     # Define the boundaries for our bend
+    Outer_bend = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry = Pipe,
+        outvar= {"normal_circle_outer": 0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria= And((x<=0.5), (y >= 1.0))
+    )
+    Pipe_domain.add_constraint(Outer_bend, "outer_bend")
+    
     Inner_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe,
-        outvar= {"normal_circle": 0},
+        outvar= {"normal_circle_inner": 0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= And((x<=0.5), (y >= 1.0))
+        criteria= And((0.5 <= x), x <= 0.625, (0.875 <= y), y <= 1)
     )
     Pipe_domain.add_constraint(Inner_bend, "inner_bend")
     
@@ -116,7 +141,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= rec2,
         outvar= {"v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= Eq(y, 1.0)
+        criteria= And(Eq(y, 1.0), x >= 0.625)
     )
     Pipe_domain.add_constraint(Outlet_pipe_lower, "OP_lower")
     
