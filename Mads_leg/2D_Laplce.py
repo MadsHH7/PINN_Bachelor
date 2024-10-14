@@ -28,14 +28,10 @@ class LaplaceEquation(PDE):
     c : float describing the constant pressure we wish to apply
 
     dim : int describing dimension    
-
-    Examples
-    ========
-    >>> we = 
-    >>> we.
-    """
+    
     name = "LaplaceEquation"
-
+    """
+    
     def __init__(self, rho=1, c=1.5, dim=2):
         # Set params
         self.dim = dim
@@ -120,10 +116,20 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec1,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*pi*x)**2},  # weight edges to be zero
+        # lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*pi*x)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
+    
+    # Outlet
+    Outlet = PointwiseBoundaryConstraint(
+        nodes=nodes,
+        geometry=rec1,
+        outvar={"p": 0},
+        batch_size=cfg.batch_size.Inlet,
+        criteria= Eq(y, 1.0),
+    )
+    Rect_domain.add_constraint(Outlet, "outlet")
     
     interior = PointwiseInteriorConstraint(
         nodes=nodes,

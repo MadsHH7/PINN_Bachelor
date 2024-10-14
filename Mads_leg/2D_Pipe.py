@@ -11,14 +11,10 @@ from modulus.sym.domain.constraint import (
     PointwiseInteriorConstraint,
 )
 from modulus.sym.key import Key
-
-
 from Laplace_EQ import LaplaceEquation
 
 
 pi = float(pi)
-
-
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -83,7 +79,6 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec2,
         outvar={"p": 0},
         batch_size=cfg.batch_size.Inlet,
-        # lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria= Eq(x, 1.5),
     )
     Pipe_domain.add_constraint(Outlet, "outlet")
@@ -111,7 +106,8 @@ def run(cfg: ModulusConfig) -> None:
     Outer_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe,
-        outvar= {"normal_circle_outer": 0},
+        # outvar= {"normal_circle_outer": 0},
+        outvar = {"normal_circle": 0},
         batch_size=cfg.batch_size.NoSlip,
         criteria= And((x<=0.5), (y >= 1.0))
     )
@@ -145,6 +141,7 @@ def run(cfg: ModulusConfig) -> None:
     )
     Pipe_domain.add_constraint(Outlet_pipe_lower, "OP_lower")
     
+    # Define the interior points
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=Pipe,
