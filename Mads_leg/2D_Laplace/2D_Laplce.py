@@ -95,7 +95,6 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        # lambda_weighting={"u": 1.0, "v": 1.0},
         criteria= Eq(x, width), 
     )
     Rect_domain.add_constraint(no_slip_right, "no_slip_right")
@@ -105,7 +104,6 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        # lambda_weighting={"u": 1.0, "v": 1.0},
         criteria= Eq(x, 0.0),
     )
     Rect_domain.add_constraint(no_slip_left, "no_slip_left")
@@ -116,7 +114,6 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec1,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        # lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*pi*x)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Rect_domain.add_constraint(Inlet, "inlet")
@@ -136,11 +133,11 @@ def run(cfg: ModulusConfig) -> None:
         geometry=rec1,
         outvar={"continuity": 0, "irrotational": 0, "bernoulli": 0}, 
         batch_size=cfg.batch_size.Interior,
-        lambda_weighting={
-            "continuity": Symbol("sdf"),
-            "irrotational": Symbol("sdf"), 
-            "bernoulli": Symbol("sdf")
-        },
+        # lambda_weighting={
+        #     "continuity": Symbol("sdf"),
+        #     "irrotational": Symbol("sdf"), 
+        #     "bernoulli": Symbol("sdf")
+        # },
     )
     Rect_domain.add_constraint(interior, "interior")
     

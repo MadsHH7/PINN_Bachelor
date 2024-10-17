@@ -106,8 +106,7 @@ def run(cfg: ModulusConfig) -> None:
     Outer_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe,
-        # outvar= {"normal_circle_outer": 0},
-        outvar = {"normal_circle": 0},
+        outvar= {"normal_circle_outer": 0},
         batch_size=cfg.batch_size.NoSlip,
         criteria= And((x<=0.5), (y >= 1.0))
     )
