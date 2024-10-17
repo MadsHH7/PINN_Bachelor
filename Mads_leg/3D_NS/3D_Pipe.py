@@ -71,8 +71,8 @@ def run(cfg: ModulusConfig) -> None:
         geometry = Pipe,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size = cfg.batch_size.NoSlip,
-        # criteria = And(z < 5.0, z > -5.0)
-        criteria = z <= 5.0
+        criteria = And(z < 5.0, z > -5.0)
+        # criteria = z <= 5.0
     )
     Cylinder_domain.add_constraint(Walls, "Walls")
     
