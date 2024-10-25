@@ -20,7 +20,8 @@ import os
 import warnings
 from eq_Laplace2D import Laplace2D
 
-from sympy import Symbol, Eq, Abs, And
+import numpy as np
+from sympy import Symbol, Function, Number, Eq, Abs, cos, pi, And
 
 import modulus.sym
 from modulus.sym.hydra import to_absolute_path, instantiate_arch, ModulusConfig
@@ -41,6 +42,8 @@ from modulus.sym.utils.io import (
     InferencerPlotter,
 )
 
+pi = float(pi)
+
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -57,32 +60,36 @@ def run(cfg: ModulusConfig) -> None:
 
     # add constraints to solver
     # make geometry
+   # Make geometry
     height = 1.0
-    width = 0.5 
-    circ_center = (0.625, 0.875)
-    r = 0.125
+    width = 0.5
     x, y = Symbol("x"), Symbol("y")
-
+    
     # Define inlet pipe
-    rec1 = Rectangle((0.0, 0.0), (0.5, 1.0))
-
+    origen_inlet = (0.0, 0.0)
+    rec1 = Rectangle(origen_inlet, (origen_inlet[0] + width, origen_inlet[1] + height))
+    
     # Define our outlet pipe, swap height and width
-    rec2 = Rectangle((0.5, 1.0), (1.5, 1.5))
-
+    origen_outlet = (0.5, 1.0)
+    rec2 = Rectangle(origen_outlet, (origen_outlet[0] + height, origen_outlet[1] + width))
+    
     # Define and cut our circle
     center = (0.5, 1.0)     # Center of the circle
     radius = 0.5            # Radius of the circle
-    circ1 = Circle(center = (0.5, 1.0), radius = 0.5)
+    circ1 = Circle(center = center, radius = radius)
     cut_rect = Rectangle((0.0, 1.0), (0.5, 1.5))    # Define our cut rectangle to be the point where our other pipe ends, and the upper right hand corner we wish to end at
 
-    rec_inner = Rectangle((0.5, 0.875), (0.625, 1.0))
-    cut_circ = Circle(center =circ_center, radius = r)
-
-    bend = rec_inner - cut_circ
     circle = circ1 & cut_rect
 
+    # Make the bend on the inside corner
+    rec_inner = Rectangle((0.5, 0.875), (0.625, 1.0))
+    cut_circ = Circle(center = (0.625, 0.875), radius = 0.125)
+
+    bend = rec_inner - cut_circ
+
     # Add all the geometries
-    Pipe = rec1 + rec2 + circle + bend
+    Pipe = rec1 + circle + rec2 + bend
+    # Make domain
 
     # make ldc domain
     ldc_domain = Domain()
@@ -92,61 +99,81 @@ def run(cfg: ModulusConfig) -> None:
         nodes=nodes,
         geometry=rec1,
         outvar={"u": 0, "v": 1},
-        batch_size=cfg.batch_size.TopWall,
-        lambda_weighting={"u": 1, "v": 1.0 - 4 * Abs(x)},  # weight edges to be zero
+        batch_size=cfg.batch_size.Inlet,
+        lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria=Eq(y, 0),
     )
     ldc_domain.add_constraint(inlet, "inlet")
 
-    # no penetration
-    inlet_left = PointwiseBoundaryConstraint(
+    # Outlet
+    Outlet = PointwiseBoundaryConstraint(
         nodes=nodes,
-        geometry=rec1,
-        outvar={"u": 0.0,},
-        batch_size=cfg.batch_size.NoPen,
-        parameterization={x:0, y:(0,1)},
+        geometry=rec2,
+        outvar={"p": 0},
+        batch_size=cfg.batch_size.Inlet,
+        criteria= Eq(x, 1.5),
+    )
+    ldc_domain.add_constraint(Outlet, "outlet")
+
+    # no penetration
+    Inlet_pipe_left = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry = rec1,
+        outvar={"u": 0.0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria=Eq(x, 0.0),
     )
 
-    ldc_domain.add_constraint(inlet_left, "inlet_left")
+    ldc_domain.add_constraint(Inlet_pipe_left, "Inlet_left")
 
     inlet_right = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=rec1,
         outvar={"u": 0.0,},
         batch_size=cfg.batch_size.NoPen,
-        parameterization={x:0.5,y:(0,1)},
+        parameterization=And(Eq(x, 0.5), y <= 0.875),
     )
     ldc_domain.add_constraint(inlet_right, "inlet_right")
 
+    Outer_bend = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry = Pipe,
+        # outvar= {"normal_circle_outer": 0},
+        outvar = {"normal_circle": 0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria= And((x<=0.5), (y >= 1.0))
+    )
+    ldc_domain.add_constraint(Outer_bend, "outer_bend")
+
+    Inner_bend = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry = Pipe,
+        outvar= {"normal_circle_inner": 0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria= And((0.5 <= x), x <= 0.625, (0.875 <= y), y <= 1)
+    )
+    ldc_domain.add_constraint(Inner_bend, "inner_bend")
 
     outlet_bottom = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=rec2,
-        outvar={"u": 0.0,},
+        outvar={"v": 0.0,},
         batch_size=cfg.batch_size.NoPen,
-        parameterization={x:(0.5,1.5), y: 1},
+        parameterization=And(Eq(y, 1.0), x >= 0.625),
     )
-    ldc_domain.add_constraint(inlet_right, "outlet_bottom")
+    ldc_domain.add_constraint(outlet_bottom, "outlet_bottom")
 
     outlet_top = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=rec2,
-        outvar={"u": 0.0,},
+        outvar={"v": 0.0,},
         batch_size=cfg.batch_size.NoPen,
-        parameterization={x:(0.5,1.5), y: 1.5},
+        parameterization={Eq(y,1.5)},
     )
-    ldc_domain.add_constraint(inlet_right, "outlet_top")
+    ldc_domain.add_constraint(outlet_top, "outlet_top")
 
 
-    circle_constriants = PointwiseBoundaryConstraint(
-        nodes=nodes,
-        geometry=Pipe,
-        outvar={"u": 0,"v": 1},
-        # outvar={"u": (x-circ_center[0])/r,"v":(y-circ_center[1])/r,},
-        batch_size=cfg.batch_size.NoPen,
-        criteria=Eq(x, 0.25)
-    )
-    ldc_domain.add_constraint(inlet_right, "circle_constriants")
+
 
 
     # interior

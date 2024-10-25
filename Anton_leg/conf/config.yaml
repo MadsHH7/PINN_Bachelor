@@ -34,7 +34,7 @@ training:
   max_steps : 500
 
 batch_size:
-  TopWall: 2000
+  Inlet: 2000
   NoPen: 2000
   Interior: 5000
 
