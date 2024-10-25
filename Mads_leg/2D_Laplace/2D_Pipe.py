@@ -66,9 +66,9 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=rec1,
-        outvar={"u": 0.0, "v": 1.0},
+        outvar={"u": 0.0, "v": 100.0},
         batch_size=cfg.batch_size.Inlet,
-        lambda_weighting={"u": 1.0, "v": 1.0 - cos(2*x*pi)**2},  # weight edges to be zero
+        # lambda_weighting={"u": 1.0, "v": 100.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Pipe_domain.add_constraint(Inlet, "inlet")
@@ -89,7 +89,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria=Eq(x, 0.0),
+        criteria=And(Eq(x, 0.0), y > 0.0)
     )
     Pipe_domain.add_constraint(Inlet_pipe_left, "IP_left")
     
@@ -98,7 +98,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry = rec1,
         outvar={"u": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= And(Eq(x, 0.5), y <= 0.875)
+        criteria= And(Eq(x, 0.5), y <= 0.875, y > 0.0)
     )
     Pipe_domain.add_constraint(Inlet_pipe_right, "IP_right")
 
@@ -106,8 +106,7 @@ def run(cfg: ModulusConfig) -> None:
     Outer_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe,
-        # outvar= {"normal_circle_outer": 0},
-        outvar = {"normal_circle": 0},
+        outvar= {"normal_circle_outer": 0},
         batch_size=cfg.batch_size.NoSlip,
         criteria= And((x<=0.5), (y >= 1.0))
     )
@@ -128,7 +127,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= rec2,
         outvar= {"v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria=Eq(y, 1.5)
+        criteria= And(Eq(y, 1.5), x < 1.5)
     )
     Pipe_domain.add_constraint(Outlet_pipe_upper, "OP_upper")
     
@@ -137,7 +136,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= rec2,
         outvar= {"v": 0.0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= And(Eq(y, 1.0), x >= 0.625)
+        criteria= And(Eq(y, 1.0), x >= 0.625, x < 1.5)
     )
     Pipe_domain.add_constraint(Outlet_pipe_lower, "OP_lower")
     
