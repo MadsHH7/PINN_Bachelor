@@ -1,16 +1,57 @@
-from modulus.sym.geometry.primitives_3d import Cylinder
-from modulus.sym.utils.io.vtk import var_to_polyvtk
+from pipe_bend_parameterized_geometry import PipeBend
+# from modulus.sym.utils.io.vtk import var_to_polyvtk
 
-n_points = 10000
+# import numpy as np
 
-center = (0, 0, 0)
-radius = 1
-height = 10
+# # test other geometry 
+# Pipe = PipeBend(bend_angle_range=(0, np.pi/2), 
+#                 radius_pipe_range=(1, 1), 
+#                 radius_bend_range=(1, 1),
+#                 inlet_pipe_length_range=(0.5, 5), 
+#                 outlet_pipe_length_range=(0.5, 5),
+# )
 
-Pipe = Cylinder(center, radius, height)
+# bound = Pipe.sample_boundary(1000)
 
-Boundary = Pipe.sample_boundary(nr_points=n_points)
-Interior = Pipe.sample_interior(nr_points=n_points)
+# var_to_polyvtk(bound, "Pipe_test/Pipe Bend")
 
-var_to_polyvtk(Boundary, "Pipe/boundary")
-var_to_polyvtk(Interior, "Pipe/interior")
+from sympy import Symbol
+import numpy as np
+from modulus.sym.geometry.parameterization import Parameterization
+
+# Initialize PipeBend with desired ranges as shown before
+bend_angle_range = (np.pi / 4, np.pi / 2)
+radius_pipe_range = (0.1, 0.2)
+radius_bend_range = (1.0, 1.5)
+inlet_pipe_length_range = (0.5, 1.0)
+outlet_pipe_length_range = (0.5, 1.0)
+
+pipe_bend = PipeBend(
+    bend_angle_range=bend_angle_range,
+    radius_pipe_range=radius_pipe_range,
+    radius_bend_range=radius_bend_range,
+    inlet_pipe_length_range=inlet_pipe_length_range,
+    outlet_pipe_length_range=outlet_pipe_length_range
+)
+
+# Sample points in the interior
+num_interior_points = 1000
+
+# Define parameter values explicitly
+parameterization = Parameterization({
+    Symbol("bend_angle"): np.pi / 3,
+    Symbol("radius_bend"): 1.25,
+    Symbol("radius_pipe"): 0.15,
+    Symbol("inlet_pipe_length"): 0.75,
+    Symbol("outlet_pipe_length"): 0.75
+})
+
+# Sample points
+interior_points = pipe_bend.sample_boundary(
+    num_interior_points,
+    parameterization=parameterization,
+    # compute_sdf=True  # Set to True if you need SDF values
+)
+
+# View sampled points (coordinates and any other information)
+var_to_polyvtk(interior_points, "Pipe_test/Pipe Bend")

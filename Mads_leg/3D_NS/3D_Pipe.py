@@ -1,4 +1,4 @@
-from sympy import Eq, And, Symbol, sqrt
+from sympy import Eq, And, Symbol, sqrt, cos, sin
 
 import modulus.sym
 
@@ -16,6 +16,10 @@ from modulus.sym.domain.constraint import (
 )
 
 from modulus.sym.key import Key
+
+from pipe_bend_parameterized_geometry import *
+import numpy as np
+
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -37,59 +41,75 @@ def run(cfg: ModulusConfig) -> None:
     radius = 1
     height = 10
 
-    Pipe = Cylinder(center, radius, height)
+    # Pipe = Cylinder(center, radius, height)
     
     # Make domain
     Cylinder_domain = Domain()
     
+    # test other geometry 
+    bend_angle_range=(np.pi/6, np.pi/6)
+    radius_pipe_range=(1, 1) 
+    radius_bend_range=(1, 1)
+    inlet_pipe_length_range=(5, 5)
+    outlet_pipe_length_range=(5, 5)
+    Pipe = PipeBend(bend_angle_range, 
+                    radius_pipe_range, 
+                    radius_bend_range,
+                    inlet_pipe_length_range, 
+                    outlet_pipe_length_range,
+    )
+
     # Make constraints
-    
     # Inlet
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry = Pipe,
-        outvar = {"u": 0.0, ("v"): 0.0, ("w"): 1.0},
+        geometry = Pipe.inlet_pipe,
+        outvar = {"u": 0.0, ("v"): 0.2, ("w"): 0.0},
         batch_size = cfg.batch_size.Inlet,
-        criteria = Eq(z, -5.0),
-        lambda_weighting = {"u": 1.0, "v": 1.0, "w": 1.0 - sqrt(x**2 + y**2)},
+        criteria = Eq(y, Pipe.inlet_center[1]),
+        # lambda_weighting = {"u": 1.0, "v": 1.0, "w": 1.0 - sqrt(x**2 + y**2)},
     )
     Cylinder_domain.add_constraint(Inlet, "Inlet")
     
     # Outlet
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry = Pipe,
+        geometry = Pipe.outlet_pipe,
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
-        criteria = Eq(z, 5.0)
+        # criteria = And(#x <= Pipe.radius_bend * cos(bend_angle_range[1]) + Pipe.outlet_center[0] * cos(bend_angle_range[1]),
+                    #    Eq(y, Pipe.radius_bend * sin(bend_angle_range[1]) + (outlet_pipe_length_range[1] * sin(bend_angle_range[1] + np.pi / 2))),
+                        # Eq()
+                    # )
+
     )
     Cylinder_domain.add_constraint(Outlet, "Outlet")
+
+    # # Boundary    
+    # Walls = PointwiseBoundaryConstraint(
+    #     nodes = nodes,
+    #     geometry = Pipe.geometry,
+    #     outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
+    #     batch_size = cfg.batch_size.NoSlip,
+    #     criteria = And(y > -5.0)
+    #     # criteria = z <= 5.0
+    # )
+    # Cylinder_domain.add_constraint(Walls, "Walls")
     
-    # Boundary
-    Walls = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry = Pipe,
-        outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
-        batch_size = cfg.batch_size.NoSlip,
-        criteria = And(z < 5.0, z > -5.0)
-        # criteria = z <= 5.0
-    )
-    Cylinder_domain.add_constraint(Walls, "Walls")
-    
-    # Interior
-    Interior = PointwiseInteriorConstraint(
-        nodes = nodes, 
-        geometry = Pipe,
-        outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
-        batch_size = cfg.batch_size.Interior,
-        lambda_weighting = {
-            "continuity": Symbol("sdf"),
-            "momentum_x": Symbol("sdf"),
-            "momentum_y": Symbol("sdf"),
-            "momentum_z": Symbol("sdf"),
-        }
-    )
-    Cylinder_domain.add_constraint(Interior, "Interior")
+    # # # Interior
+    # Interior = PointwiseInteriorConstraint(
+    #     nodes = nodes, 
+    #     geometry = Pipe.geometry,
+    #     outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
+    #     batch_size = cfg.batch_size.Interior,
+    #     lambda_weighting = {
+    #         "continuity": Symbol("sdf"),
+    #         "momentum_x": Symbol("sdf"),
+    #         "momentum_y": Symbol("sdf"),
+    #         "momentum_z": Symbol("sdf"),
+    #     }
+    # )
+    # Cylinder_domain.add_constraint(Interior, "Interior")
     
     # Make solver
     slv = Solver(cfg, Cylinder_domain)
@@ -102,3 +122,6 @@ if __name__ == "__main__":
     run()
     # Paraview
     # u*iHat + v*jHat + w*kHat
+
+    # DTU HPC interactive
+    # sxm2sh
