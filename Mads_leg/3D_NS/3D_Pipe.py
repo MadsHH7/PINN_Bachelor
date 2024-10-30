@@ -1,8 +1,6 @@
 from sympy import Eq, And, Symbol, sqrt, cos, sin
 
 import modulus.sym
-
-from modulus.sym.geometry.primitives_3d import Cylinder
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 
 from modulus.sym.solver import Solver
@@ -14,6 +12,7 @@ from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
     PointwiseInteriorConstraint,
 )
+from modulus.sym.geometry.primitives_3d import Cylinder, Plane, Box, Channel
 
 from modulus.sym.key import Key
 
@@ -52,6 +51,10 @@ def run(cfg: ModulusConfig) -> None:
     radius_bend_range=(1, 1)
     inlet_pipe_length_range=(5, 5)
     outlet_pipe_length_range=(5, 5)
+    theta = bend_angle_range[1]
+    radius = radius_bend_range[1]
+    outlet_pipe_length = outlet_pipe_length_range[1]
+
     Pipe = PipeBend(bend_angle_range, 
                     radius_pipe_range, 
                     radius_bend_range,
@@ -60,43 +63,50 @@ def run(cfg: ModulusConfig) -> None:
     )
 
     # Make constraints
-    # Inlet
-    Inlet = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry = Pipe.inlet_pipe,
-        outvar = {"u": 0.0, ("v"): 0.2, ("w"): 0.0},
-        batch_size = cfg.batch_size.Inlet,
-        criteria = Eq(y, Pipe.inlet_center[1]),
-        # lambda_weighting = {"u": 1.0, "v": 1.0, "w": 1.0 - sqrt(x**2 + y**2)},
-    )
-    Cylinder_domain.add_constraint(Inlet, "Inlet")
+    # Inlet = PointwiseBoundaryConstraint(
+    #     nodes = nodes,
+    #     geometry = Pipe.inlet_pipe,
+    #     outvar = {"u": 0.0, ("v"): 0.2, ("w"): 0.0},
+    #     batch_size = cfg.batch_size.Inlet,
+    #     criteria = Eq(y, Pipe.inlet_center[1]),
+    # )
+    # Cylinder_domain.add_constraint(Inlet, "Inlet")
     
-    # Outlet
+    # # Outlet
+
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry = Pipe.outlet_pipe,
+        geometry = Pipe.outlet,
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
-        # criteria = And(#x <= Pipe.radius_bend * cos(bend_angle_range[1]) + Pipe.outlet_center[0] * cos(bend_angle_range[1]),
-                    #    Eq(y, Pipe.radius_bend * sin(bend_angle_range[1]) + (outlet_pipe_length_range[1] * sin(bend_angle_range[1] + np.pi / 2))),
-                        # Eq()
-                    # )
+        criteria=Eq(radius*sin(theta), Pipe.outlet_center[1])
 
+
+
+        # criteria= And(
+            # y <= Pipe.outlet_center[1] - radius*sin(y),
+            # x <= radius * cos(x) + Pipe.outlet_center[0] + radius*cos(x),
+        #     # y >= radius * cos(x) + Pipe.outlet_center[1],
+        #     x <= Pipe.outlet_center[0] + radius * cos(theta)
+        # )
     )
     Cylinder_domain.add_constraint(Outlet, "Outlet")
 
-    # # Boundary    
+    # Boundary    
+    # wall = Pipe.geometry 
+    
     # Walls = PointwiseBoundaryConstraint(
     #     nodes = nodes,
-    #     geometry = Pipe.geometry,
+    #     geometry = wall,
     #     outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
     #     batch_size = cfg.batch_size.NoSlip,
-    #     criteria = And(y > -5.0)
+    #     criteria = And(y > Pipe.inlet_center[1],)
+    #                 #    x > Pipe.outlet_center[0] + radius * cos(theta))
     #     # criteria = z <= 5.0
     # )
     # Cylinder_domain.add_constraint(Walls, "Walls")
     
-    # # # Interior
+    # # Interior
     # Interior = PointwiseInteriorConstraint(
     #     nodes = nodes, 
     #     geometry = Pipe.geometry,

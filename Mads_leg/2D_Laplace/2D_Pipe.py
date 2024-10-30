@@ -66,7 +66,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=rec1,
-        outvar={"u": 0.0, "v": 100.0},
+        outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
         # lambda_weighting={"u": 1.0, "v": 100.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
