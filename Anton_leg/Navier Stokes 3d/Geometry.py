@@ -28,6 +28,10 @@ pipe = PipeBend(bend_angle_range= bend_angle,
                 outlet_pipe_length_range=outlet_pipe_length)
 
 geo = pipe.geometry-pipe.inlet-pipe.outlet
+p1 = [pipe.outlet_center[0],pipe.outlet_center[1],0.5]
+p2 = [pipe.outlet_center[0],pipe.outlet_center[1],-0.5]
+out_plane = Plane(point_1=p1,point_2=p2)
+
 
 Bound = geo.sample_boundary(nr_points=n_points)
 Interior = geo.sample_interior(nr_points=n_points)

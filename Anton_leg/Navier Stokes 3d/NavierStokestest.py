@@ -21,7 +21,7 @@ from modulus.sym.key import Key
 
 from pipe_bend_parameterized_geometry import PipeBend
 from modulus.sym.geometry import Parameterization
-from sympy import pi
+from sympy import pi, cos, sin
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -52,6 +52,9 @@ def run(cfg: ModulusConfig) -> None:
                     inlet_pipe_length_range=inlet_pipe_length,
                     outlet_pipe_length_range=outlet_pipe_length)
         # Make domain
+    p1 = [Pipe.outlet_center[0],Pipe.outlet_center[1],0.5]
+    p2 = [Pipe.outlet_center[0],Pipe.outlet_center[1],-0.5]
+    out_plane = Plane()
     pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
     
@@ -74,7 +77,6 @@ def run(cfg: ModulusConfig) -> None:
         criteria=Eq(y,Pipe.inlet_center[1]),
     )
 
-    Pipe.outlet_center[2]
     Pipe_domain.add_constraint(Inlet,"Inlet")
 
     Outlet = PointwiseBoundaryConstraint(
@@ -82,9 +84,10 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.outlet_pipe,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria=Eq(y,Pipe.outlet_center[1]),
+        criteria=And(x <= radius_bend[0] * cos(bend_angle[0]) - sin(bend_angle[0])*outlet_pipe_length[0],),
+                    #  y <= radius_bend[0] * sin(bend_angle[0]) + cos(bend_angle[0])*outlet_pipe_length[1],)
     )
-   
+
     Pipe_domain.add_constraint(Outlet,"Outlet")
 
     ## Boundary conditions
@@ -93,6 +96,9 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.geometry,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size = cfg.batch_size.Walls,
+        # criteria=And(x >= radius_bend[0] * cos(bend_angle[0]) - sin(bend_angle[0])*outlet_pipe_length[0],
+        #             #  y >= radius_bend[0] * sin(bend_angle[0]) + cos(bend_angle[0])*outlet_pipe_length[1],)
+        # )
     )
 
     Pipe_domain.add_constraint(Walls,"Walls")
