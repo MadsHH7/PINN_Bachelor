@@ -84,11 +84,12 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Inlet,"Inlet")
 
     direction = (outlet_pipe_length * cos(bend_angle + pi / 2), outlet_pipe_length * sin(bend_angle + pi / 2))
+    
 
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.outlet_pipe,
-        outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
+        outvar = {"p": 0.0,},
         batch_size= cfg.batch_size.Inlet,
         criteria=Eq( direction[0] * (x-Pipe.outlet_center[0]) + direction[1] * (y-Pipe.outlet_center[1]),0 ),
     )
@@ -96,20 +97,27 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Outlet,"Outlet")
 
     ## Boundary conditions
-    
-
+    epsilon = 10**(-4)
+    scaler = 1-epsilon
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.geometry,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size = cfg.batch_size.Walls,
-        criteria=And( direction[0] * (x-Pipe.outlet_center[0]) + direction[1] * (y-Pipe.outlet_center[1]) < 0,
+        criteria=And( direction[0] * (x-Pipe.outlet_center[0]*scaler) + direction[1] * (y-Pipe.outlet_center[1]*scaler) - epsilon < 0,
                      y > Pipe.inlet_center[1]),
     )
 
     Pipe_domain.add_constraint(Walls,"Walls")
     
+    Interior = PointwiseInteriorConstraint(
+        nodes = nodes,
+        geometry= Pipe.geometry,
+        outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
+        batch_size= cfg.batch_size.Interior,
+    )
 
+    Pipe_domain.add_constraint(Interior,"Interior")
 
     # Make solver
     slv = Solver(cfg, Pipe_domain)
