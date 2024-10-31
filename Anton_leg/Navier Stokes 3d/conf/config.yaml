@@ -37,7 +37,7 @@ batch_size:
   Inlet: 2000
   NoSlip: 4000
   # PipeBend: 
-  Walls: 20000
+  Walls: 40000
   Interior: 5000
 
 graph:

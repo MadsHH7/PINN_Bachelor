@@ -39,17 +39,16 @@ def run(cfg: ModulusConfig) -> None:
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
-    bend_angle_range = (pi/2,pi/2)
+    bend_angle_range = (1.323541349,1.323541349)
     radius_pipe_range = (1,1)
     radius_bend_range = (1,1)
     inlet_pipe_length_range = (5,5)
     outlet_pipe_length_range = (5,5)
 
-    bend_angle = pi/2
-    radius = 1
-    inlet_length = 5
-    outlet_pipe_length = 5
-
+    bend_angle = bend_angle_range[0]
+    radius = radius_pipe_range[0]
+    inlet_length = inlet_pipe_length_range[0]
+    outlet_pipe_length = outlet_pipe_length_range[0]
 
     Pipe = PipeBend(bend_angle_range= bend_angle_range,
                     radius_pipe_range=radius_pipe_range,
