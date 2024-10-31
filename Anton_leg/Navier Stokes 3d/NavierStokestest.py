@@ -39,25 +39,30 @@ def run(cfg: ModulusConfig) -> None:
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
-    bend_angle = (pi/2,pi/2)
-    radius_pipe = (1,1)
-    radius_bend = (1,1)
-    inlet_pipe_length = (5,5)
-    outlet_pipe_length = (5,5)
+    bend_angle_range = (pi/2,pi/2)
+    radius_pipe_range = (1,1)
+    radius_bend_range = (1,1)
+    inlet_pipe_length_range = (5,5)
+    outlet_pipe_length_range = (5,5)
+
+    bend_angle = pi/2
+    radius = 1
+    inlet_length = 5
+    outlet_pipe_length = 5
 
 
-    Pipe = PipeBend(bend_angle_range= bend_angle,
-                    radius_pipe_range=radius_pipe,
-                    radius_bend_range=radius_bend,
-                    inlet_pipe_length_range=inlet_pipe_length,
-                    outlet_pipe_length_range=outlet_pipe_length)
+    Pipe = PipeBend(bend_angle_range= bend_angle_range,
+                    radius_pipe_range=radius_pipe_range,
+                    radius_bend_range=radius_bend_range,
+                    inlet_pipe_length_range=inlet_pipe_length_range,
+                    outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
-    p1 = [Pipe.outlet_center[0],Pipe.outlet_center[1],0.5]
-    p2 = [Pipe.outlet_center[0],Pipe.outlet_center[1],-0.5]
-    out_plane = Plane()
     pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
     
+    # Make outlet Geometry
+
+    # geom_outlet = Pipe.outlet_pipe & Pipe.outlet_pipe_planes[-1]
 
     # Make constraints
 
@@ -79,26 +84,28 @@ def run(cfg: ModulusConfig) -> None:
 
     Pipe_domain.add_constraint(Inlet,"Inlet")
 
+    direction = (outlet_pipe_length * cos(bend_angle + pi / 2), outlet_pipe_length * sin(bend_angle + pi / 2))
+
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.outlet_pipe,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria=And(x <= radius_bend[0] * cos(bend_angle[0]) - sin(bend_angle[0])*outlet_pipe_length[0],),
-                    #  y <= radius_bend[0] * sin(bend_angle[0]) + cos(bend_angle[0])*outlet_pipe_length[1],)
+        criteria=Eq( direction[0] * (x-Pipe.outlet_center[0]) + direction[1] * (y-Pipe.outlet_center[1]),0 ),
     )
 
     Pipe_domain.add_constraint(Outlet,"Outlet")
 
     ## Boundary conditions
+    
+
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.geometry,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size = cfg.batch_size.Walls,
-        # criteria=And(x >= radius_bend[0] * cos(bend_angle[0]) - sin(bend_angle[0])*outlet_pipe_length[0],
-        #             #  y >= radius_bend[0] * sin(bend_angle[0]) + cos(bend_angle[0])*outlet_pipe_length[1],)
-        # )
+        criteria=And( direction[0] * (x-Pipe.outlet_center[0]) + direction[1] * (y-Pipe.outlet_center[1]) < 0,
+                     y > Pipe.inlet_center[1]),
     )
 
     Pipe_domain.add_constraint(Walls,"Walls")
