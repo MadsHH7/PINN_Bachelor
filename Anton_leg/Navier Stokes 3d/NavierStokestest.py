@@ -31,9 +31,13 @@ def run(cfg: ModulusConfig) -> None:
     ns = NavierStokes(nu = 0.01, rho = 500.0, dim = 3, time = False)
 
     normal_dot_vel = NormalDotVec(["u", "v","w"])
+    vel = Symbol("vel")
+    parameters ={"vel":(5,30)}
+    pr = Parameterization(parameters)
+
     # Create network
     flow_net = instantiate_arch(
-        input_keys = [Key("x"), Key("y"), Key("z"),Key("vel")],
+        input_keys = [Key("x"), Key("y"), Key("z")],
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
@@ -41,9 +45,7 @@ def run(cfg: ModulusConfig) -> None:
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
-    vel = Symbol("vel")
-    parameters ={"vel":(5,30)}
-    pr = Parameterization(parameters)
+    
 
     
     bend_angle_range = (1.323541349,1.323541349)
@@ -83,13 +85,10 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.inlet_pipe,
         outvar = {"u": 0.0, "v": 1.0, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria= ((x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <=radius**2),
+        criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
     )
 
     Pipe_domain.add_constraint(Inlet,"Inlet")
-
-    direction = (outlet_pipe_length * cos(bend_angle + pi / 2), outlet_pipe_length * sin(bend_angle + pi / 2))
-    
 
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
@@ -128,26 +127,53 @@ def run(cfg: ModulusConfig) -> None:
  # Add integral planes to help the network learn the flow.
     # The planes tell the network how much fluid is moved through each plane on average.
 
+    centers = []
 
-    planes = [Pipe.inlet_pipe_planes,Pipe.bend_planes,Pipe.outlet_pipe_planes]
+    for elem in (Pipe.inlet_pipe_planes_centers):
+        centers.append(elem)
 
+    for elem in Pipe.bend_planes_centers:
+        centers.append(elem)
+    
+    for elem in Pipe.outlet_pipe_planes_center:
+        centers.append(elem)
 
-    lengths = [0]*(len(planes))
-    for i in len(planes):
-        lengths[i] = sqrt( (planes[i][0]-planes[i+1][0])**2
-                             + (planes[i][1]-planes[i+1][1])**2
-                               + (planes[i][2]-planes[i+1][2])**2)
+    planes = []
+    for elem in Pipe.inlet_pipe_planes:
+        planes.append(elem)
+    for elem in Pipe.bend_planes:
+        planes.append(elem)
+    for elem in Pipe.outlet_pipe_planes:
+        planes.append(elem)
+    
+    print(centers[0])
+    lengths = []
+    lengths.append(sqrt( (Pipe.inlet_center[0]-centers[0][0])**2
+                        + (Pipe.inlet_center[1]-centers[0][1])**2) )
+    for i in range(len(planes)-1):
+        lengths.append(sqrt( (centers[i][0]-centers[i+1][0])**2
+                             + (centers[i][1]-centers[i+1][1])**2))
+    
+    # lengths.append(sqrt( (Pipe.outlet_center[0]-centers[-1][0])**2
+                        # + (Pipe.outlet_center[1]-centers[-1][1])**2) )
 
+    print("Length og lengths: ", len(lengths))
+    print("Length of planes: ", len(planes))
 
     for i, (plane, length) in enumerate(zip(planes, lengths)):
         mass_flow_rate = vel * length # Unit is m^2/s
+        print( )
+        print(mass_flow_rate)
+        print()
+        print(plane)
+
         integral_continuity = IntegralBoundaryConstraint(
             nodes=nodes,
             geometry=plane,
             outvar={"normal_dot_vel": mass_flow_rate},
             batch_size=1,
             integral_batch_size=cfg.batch_size.IntegralContinuity,
-            lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
+            # lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
             parameterization=pr,
         )
         Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
