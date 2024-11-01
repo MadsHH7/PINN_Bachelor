@@ -5,6 +5,7 @@ import modulus.sym
 from modulus.sym.geometry.primitives_3d import Cone, Plane
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pdes.turbulence_zero_eq import ZeroEquation
+from modulus.sym.eq.pdes.basic import NormalDotVec
 
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
@@ -15,6 +16,7 @@ from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
     PointwiseInteriorConstraint,
     PointwiseConstraint,
+    IntegralBoundaryConstraint,
 )
 
 from modulus.sym.key import Key
@@ -26,11 +28,12 @@ from sympy import pi, cos, sin
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ns = NavierStokes(nu = 0.01, rho = 1.0, dim = 3, time = False)
-    
+    ns = NavierStokes(nu = 0.01, rho = 500.0, dim = 3, time = False)
+
+    normal_dot_vel = NormalDotVec(["u", "v","w"])
     # Create network
     flow_net = instantiate_arch(
-        input_keys = [Key("x"), Key("y"), Key("z")],
+        input_keys = [Key("x"), Key("y"), Key("z"),Key("vel")],
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
@@ -38,12 +41,16 @@ def run(cfg: ModulusConfig) -> None:
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
+    vel = Symbol("vel")
+    parameters ={"vel":(5,30)}
+    pr = Parameterization(parameters)
+
     
     bend_angle_range = (1.323541349,1.323541349)
-    radius_pipe_range = (1,1)
-    radius_bend_range = (1,1)
-    inlet_pipe_length_range = (5,5)
-    outlet_pipe_length_range = (5,5)
+    radius_pipe_range = (0.1,0.1)
+    radius_bend_range = (0.1,0.1)
+    inlet_pipe_length_range = (0.2,0.2)
+    outlet_pipe_length_range = (1,1)
 
     bend_angle = bend_angle_range[0]
     radius = radius_pipe_range[0]
@@ -56,9 +63,7 @@ def run(cfg: ModulusConfig) -> None:
                     inlet_pipe_length_range=inlet_pipe_length_range,
                     outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
-    pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
-    
     # Make outlet Geometry
 
     # geom_outlet = Pipe.outlet_pipe & Pipe.outlet_pipe_planes[-1]
@@ -78,7 +83,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.inlet_pipe,
         outvar = {"u": 0.0, "v": 1.0, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria=Eq(y,Pipe.inlet_center[1]),
+        criteria= ((x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <=radius**2),
     )
 
     Pipe_domain.add_constraint(Inlet,"Inlet")
@@ -91,21 +96,21 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.outlet_pipe,
         outvar = {"p": 0.0,},
         batch_size= cfg.batch_size.Inlet,
-        criteria=Eq( direction[0] * (x-Pipe.outlet_center[0]) + direction[1] * (y-Pipe.outlet_center[1]),0 ),
+        criteria= ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 <= radius**2),
     )
 
     Pipe_domain.add_constraint(Outlet,"Outlet")
 
     ## Boundary conditions
-    epsilon = 10**(-4)
-    scaler = 1-epsilon
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.geometry,
         outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
         batch_size = cfg.batch_size.Walls,
-        criteria=And( direction[0] * (x-Pipe.outlet_center[0]*scaler) + direction[1] * (y-Pipe.outlet_center[1]*scaler) - epsilon < 0,
-                     y > Pipe.inlet_center[1]),
+        criteria=And(
+            ((x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2),
+            ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 > radius**2),
+    )
     )
 
     Pipe_domain.add_constraint(Walls,"Walls")
@@ -115,9 +120,38 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.geometry,
         outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
         batch_size= cfg.batch_size.Interior,
+        criteria=(x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2,   
     )
 
     Pipe_domain.add_constraint(Interior,"Interior")
+
+ # Add integral planes to help the network learn the flow.
+    # The planes tell the network how much fluid is moved through each plane on average.
+
+
+    planes = [Pipe.inlet_pipe_planes,Pipe.bend_planes,Pipe.outlet_pipe_planes]
+
+
+    lengths = [0]*(len(planes))
+    for i in len(planes):
+        lengths[i] = sqrt( (planes[i][0]-planes[i+1][0])**2
+                             + (planes[i][1]-planes[i+1][1])**2
+                               + (planes[i][2]-planes[i+1][2])**2)
+
+
+    for i, (plane, length) in enumerate(zip(planes, lengths)):
+        mass_flow_rate = vel * length # Unit is m^2/s
+        integral_continuity = IntegralBoundaryConstraint(
+            nodes=nodes,
+            geometry=plane,
+            outvar={"normal_dot_vel": mass_flow_rate},
+            batch_size=1,
+            integral_batch_size=cfg.batch_size.IntegralContinuity,
+            lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
+            parameterization=pr,
+        )
+        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+
 
     # Make solver
     slv = Solver(cfg, Pipe_domain)
@@ -130,3 +164,14 @@ if __name__ == "__main__":
     run()
     # Paraview
     # u*iHat + v*jHat + w*kHat
+
+# Integral continuty planes
+# Tilføj dem for at tvinge flow gennem røret
+# laver tværsnit i røret som siger at integralet igennem snittet skal flow være det samme.
+# Lav en constrint der integrer (summer for at gøre det diskret), det skal altid være det samme.
+
+# class: Integralboundaryconstraint
+
+# Husk at fjerne disconuitet ved inlet.
+# Man kan ændre learning rate ved at stoppe trænningen og ændre navnet på optime_checkpoint
+# Den vil køre videre med samme model, men bruge den nye learning rate.

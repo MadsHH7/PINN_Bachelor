@@ -7,6 +7,7 @@ from modulus.sym.utils.io.vtk import var_to_polyvtk
 from pipe_bend_parameterized_geometry import PipeBend
 from modulus.sym.geometry import Parameterization
 from sympy import pi
+from numpy import sum
 # center = (0, 0, 0)
 # radius = 2
 # height = 10
@@ -33,6 +34,10 @@ geo = pipe.outlet
 Bound = geo.sample_boundary(nr_points=n_points)
 Interior = geo.sample_interior(nr_points=n_points)
 
+total_area = sum(Bound['area'])
+total_volume = sum(Bound['volume'])
+print(total_area)
+print(total_volume)
 
 var_to_polyvtk(Interior, "GeomTest/test_interior")
 var_to_polyvtk(Bound, "GeomTest/test_bound")
