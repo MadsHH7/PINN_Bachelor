@@ -1,6 +1,8 @@
 from sympy import Eq, And, Symbol, sqrt, cos, sin, pi
 import os
 
+import numpy as np
+
 import modulus.sym
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 
@@ -12,7 +14,8 @@ from modulus.sym.hydra import instantiate_arch, ModulusConfig
 from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
     PointwiseInteriorConstraint,
-    IntegralBoundaryConstraint
+    IntegralBoundaryConstraint,
+    PointwiseConstraint,
 )
 
 from modulus.sym.key import Key
@@ -26,7 +29,7 @@ import numpy as np
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ns = NavierStokes(nu = 0.00002, rho = 1.0, dim = 3, time = False)
+    ns = NavierStokes(nu = 0.00002, rho = 500, dim = 3, time = False)
     
     # Create network
     flow_net = instantiate_arch(
@@ -40,7 +43,7 @@ def run(cfg: ModulusConfig) -> None:
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
     # Make domain
-    Cylinder_domain = Domain()
+    Pipe_domain = Domain()
     
     # test other geometry 
     bend_angle_range=(1.323541349, 1.323541349)
@@ -60,6 +63,7 @@ def run(cfg: ModulusConfig) -> None:
                     outlet_pipe_length_range,
     )
 
+    
     # Make constraints
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
@@ -68,7 +72,7 @@ def run(cfg: ModulusConfig) -> None:
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
     )
-    Cylinder_domain.add_constraint(Inlet, "Inlet")
+    Pipe_domain.add_constraint(Inlet, "Inlet")
     
     # Outlet
     direction = (outlet_pipe_length * cos(theta + pi / 2), outlet_pipe_length * sin(theta + pi / 2))
@@ -80,7 +84,7 @@ def run(cfg: ModulusConfig) -> None:
         batch_size = cfg.batch_size.Inlet,
         criteria = ((x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 <= radius**2)
     )
-    Cylinder_domain.add_constraint(Outlet, "Outlet")
+    Pipe_domain.add_constraint(Outlet, "Outlet")
 
     # Boundary    
     
@@ -93,7 +97,7 @@ def run(cfg: ModulusConfig) -> None:
                        ((x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 > radius**2),
         )
     )
-    Cylinder_domain.add_constraint(Walls, "Walls")
+    Pipe_domain.add_constraint(Walls, "Walls")
     
     # Interior
     Interior = PointwiseInteriorConstraint(
@@ -108,7 +112,7 @@ def run(cfg: ModulusConfig) -> None:
             "momentum_z": Symbol("sdf"),
         }
     )
-    Cylinder_domain.add_constraint(Interior, "Interior")
+    Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
     # all_planes = Pipe.inlet_pipe_planes + Pipe.bend + Pipe.bend_planes + Pipe.outlet_pipe_planes + Pipe.outlet
@@ -120,14 +124,31 @@ def run(cfg: ModulusConfig) -> None:
     #     batch_size = 11,
     #     integral_batch_size = 100,
     # )
-    # Cylinder_domain.add_constraint(integral, "Integral")
+    # Pipe_domain.add_constraint(integral, "Integral")
     
-    input, output, df = get_data(
-        df_path= os.path.join()
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    key = "pt1"
+    
+    input, output, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+        desired_input_keys=["x", "y", "z"],
+        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+        desired_output_keys=["u", "v", "w", "p"],
+        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
     )
     
+    # flow_data = np.full((nr_points, 1))
+    
+    flow = PointwiseConstraint.from_numpy(
+        nodes = nodes,
+        invar = input,
+        outvar = output,
+        batch_size = nr_points,
+    )
+    Pipe_domain.add_constraint(flow, "flow_data")
+    
     # Make solver
-    slv = Solver(cfg, Cylinder_domain)
+    slv = Solver(cfg, Pipe_domain)
     
     # Start solver
     slv.solve()
