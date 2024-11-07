@@ -143,6 +143,7 @@ def run(cfg: ModulusConfig) -> None:
         desired_output_keys=["u", "v", "w", "p"],
         original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
         rotation_matrix= rot_matrix,
+        translate=(Pipe.bend.bend_planes_center[-1][0], Pipe.bend_planes_center[-1][1], Pipe.bend_planes_center[-1][2])
     )
     
     # flow_data = np.full((nr_points, 1))
