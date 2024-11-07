@@ -54,7 +54,6 @@ def run(cfg: ModulusConfig) -> None:
     
     theta = bend_angle_range[1]
     radius = radius_bend_range[1]
-    outlet_pipe_length = outlet_pipe_length_range[1]
 
     Pipe = PipeBend(bend_angle_range, 
                     radius_pipe_range, 
