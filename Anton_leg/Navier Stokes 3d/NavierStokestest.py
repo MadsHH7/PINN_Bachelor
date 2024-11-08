@@ -6,6 +6,7 @@ from modulus.sym.geometry.primitives_3d import Cone, Plane
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pdes.turbulence_zero_eq import ZeroEquation
 from modulus.sym.eq.pdes.basic import NormalDotVec
+from modulus.sym.domain.inferencer import PointwiseInferencer, PointVTKInferencer
 
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
@@ -28,6 +29,10 @@ from PINN_Helper import get_data
 import numpy as np
 import os
 import torch
+from modulus.sym.utils.io import (
+    csv_to_dict,
+    ValidatorPlotter,
+    InferencerPlotter)
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -180,31 +185,52 @@ def run(cfg: ModulusConfig) -> None:
     #         parameterization=pr,
     #     )
     #     Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
-
-    theta = torch.tensor(float(pi/2))
-    rot_matrix = torch.tensor([[torch.cos(theta),-torch.sin(theta),0],
-                            [torch.sin(theta),torch.cos(theta),0],
-                            [0, 0, 1]])
-
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
-        
-    input, output, nr_points = get_data(
-            df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-            desired_input_keys=["x", "y", "z"],
-            original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-            desired_output_keys=["u", "v", "w", "p"],
-            original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-            rotation_matrix=rot_matrix,
-        )
+    angle = (pi / 2) + bend_angle
+    rot_matrix = (
+        [float(cos(angle)), float(-sin(angle)), 0],
+        [float(sin(angle)), float(cos(angle)), 0],
+        [0, 0, 1]
+    )
 
+    translate= ([
+        0,
+        inlet_pipe_length_range[-1],
+        0
+    ])
+
+    input, output, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+        desired_input_keys=["x", "y", "z"],
+        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+        desired_output_keys=["u", "v", "w", "p"],
+        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+        rotation_matrix= rot_matrix,
+        translation=translate
+    )
+    
+    # flow_data = np.full((nr_points, 1))
+    
     flow = PointwiseConstraint.from_numpy(
-            nodes = nodes,
-            invar = input,
-            outvar = output,
-            batch_size = nr_points,
-        )
+        nodes = nodes,
+        invar = input,
+        outvar = output,
+        batch_size = nr_points,
+    )
     Pipe_domain.add_constraint(flow, "flow_data")
+
+
+    # add inferencer data
+    # grid_inference = PointVTKInferencer(
+    #     nodes=nodes,
+    #     vtk_obj=Pipe,
+    #     output_names=["u", "v", "p"],
+    #     batch_size=1024,
+    #     plotter=InferencerPlotter(),
+    # )
+
+    # Pipe_domain.add_inferencer(grid_inference, "grid_inference")
     # Make solver
     slv = Solver(cfg, Pipe_domain)
     
