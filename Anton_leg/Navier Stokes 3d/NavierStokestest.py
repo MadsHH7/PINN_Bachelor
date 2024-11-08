@@ -50,7 +50,7 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes()+normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -132,6 +132,24 @@ def run(cfg: ModulusConfig) -> None:
 
     Pipe_domain.add_constraint(Interior,"Interior")
 
+    ## Attempt 2 at integral conditions
+
+    plane0 = Pipe.inlet_pipe_planes[0]
+    enumerate
+
+    for i,plane in enumerate(Pipe.inlet_pipe_planes):
+        mass_flow_rate = vel * radius # Unit is m^2/s
+        integral_continuity = IntegralBoundaryConstraint(
+            nodes=nodes,
+            geometry=plane,
+            outvar={"normal_dot_vel": mass_flow_rate},
+            batch_size=1,
+            integral_batch_size=cfg.batch_size.IntegralContinuity,
+            # lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
+            parameterization=pr,
+            )
+        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+
  # Add integral planes to help the network learn the flow.
     # The planes tell the network how much fluid is moved through each plane on average.
 
@@ -185,6 +203,9 @@ def run(cfg: ModulusConfig) -> None:
     #         parameterization=pr,
     #     )
     #     Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+
+
+
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
     angle = (pi / 2) + bend_angle
@@ -221,21 +242,31 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(flow, "flow_data")
 
 
-    # add inferencer data
-    # grid_inference = PointVTKInferencer(
-    #     nodes=nodes,
-    #     vtk_obj=Pipe,
-    #     output_names=["u", "v", "p"],
-    #     batch_size=1024,
-    #     plotter=InferencerPlotter(),
-    # )
 
-    # Pipe_domain.add_inferencer(grid_inference, "grid_inference")
-    # Make solver
+
+    nr_points=int(1e5)
+    
+    
+    inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
+    
+    xs = inference_pts["x"]
+    ys = inference_pts["y"]
+    zs = inference_pts["z"]
+
+    inference = PointwiseInferencer(
+            nodes=nodes,
+            invar={"x": xs, "y": ys, "z": zs},
+            output_names=["u", "v", "p"],
+            batch_size=nr_points,
+        )
+    Pipe_domain.add_inferencer(inference, "Inference")
+
     slv = Solver(cfg, Pipe_domain)
     
     # Start solver
     slv.solve()
+    
+
     
     
 if __name__ == "__main__":
