@@ -39,7 +39,7 @@ def run(cfg: ModulusConfig) -> None:
     # Make equation
     ns = NavierStokes(nu = 0.01, rho = 500.0, dim = 3, time = False)
 
-    normal_dot_vel = NormalDotVec(["u", "v","w"])
+    # normal_dot_vel = NormalDotVec(["u", "v","w"])
     vel = Symbol("vel")
     parameters ={"vel":(5,30)}
     pr = Parameterization(parameters)
@@ -134,17 +134,16 @@ def run(cfg: ModulusConfig) -> None:
 
     ## Attempt 2 at integral conditions
 
-    plane0 = Pipe.inlet_pipe_planes[0]
-    enumerate
+    normal_dot_vel = NormalDotVec()
 
     for i,plane in enumerate(Pipe.inlet_pipe_planes):
-        mass_flow_rate = vel * radius # Unit is m^2/s
+        # mass_flow_rate = vel * radius # Unit is m^2/s
         integral_continuity = IntegralBoundaryConstraint(
             nodes=nodes,
             geometry=plane,
-            outvar={"normal_dot_vel": mass_flow_rate},
+            outvar={"normal_dot_vel": 0.1},
             batch_size=1,
-            integral_batch_size=cfg.batch_size.IntegralContinuity,
+            integral_batch_size=100,
             # lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
             parameterization=pr,
             )
