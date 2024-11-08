@@ -16,6 +16,7 @@
 
 defaults :
   - modulus_default
+  # - network_dir: f"zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/batch_outputs"
   - arch:
       - fully_connected
   - scheduler: tf_exponential_lr

@@ -118,13 +118,13 @@ def run(cfg: ModulusConfig) -> None:
     # Integral constraint
     normal_dot_vel = NormalDotVec()
     flow_nodes = nodes + normal_dot_vel.make_nodes()
-        
+    Volumetric_flow = pi * radius**2 * 0.1
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
     for i, plane in enumerate(all_planes):
         integral = IntegralBoundaryConstraint(
             nodes = flow_nodes,
             geometry = plane,
-            outvar = {"normal_dot_vel": 0.1},
+            outvar = {"normal_dot_vel": Volumetric_flow},
             batch_size = 1,
             integral_batch_size = 100,
         )
