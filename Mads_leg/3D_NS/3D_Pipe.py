@@ -5,6 +5,7 @@ import numpy as np
 
 import modulus.sym
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
+from modulus.sym.eq.pdes.basic import NormalDotVec
 
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
@@ -24,6 +25,8 @@ from PINN_Helper import get_data
 
 from pipe_bend_parameterized_geometry import *
 import numpy as np
+
+from modulus.sym.domain.inferencer import PointVTKInferencer, PointwiseInferencer
 
 
 @modulus.sym.main(config_path="conf", config_name="config")
@@ -53,7 +56,7 @@ def run(cfg: ModulusConfig) -> None:
     outlet_pipe_length_range=(1.0, 1.0) # 1.0 m rigtige tal
     
     theta = bend_angle_range[1]
-    radius = radius_bend_range[1]
+    radius = radius_pipe_range[1]
 
     Pipe = PipeBend(bend_angle_range, 
                     radius_pipe_range, 
@@ -113,19 +116,22 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend + Pipe.bend_planes + Pipe.outlet_pipe_planes + Pipe.outlet
-
-    # integral = IntegralBoundaryConstraint(
-    #     nodes = nodes,
-    #     geometry = Pipe.geometry,
-    #     outvar = {"u": 0.0, "v": 0.1, "w": 0.0},
-    #     batch_size = 11,
-    #     integral_batch_size = 100,
-    # )
-    # Pipe_domain.add_constraint(integral, "Integral")
+    normal_dot_vel = NormalDotVec()
+    flow_nodes = nodes + normal_dot_vel.make_nodes()
+        
+    all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
+    for i, plane in enumerate(all_planes):
+        integral = IntegralBoundaryConstraint(
+            nodes = flow_nodes,
+            geometry = plane,
+            outvar = {"normal_dot_vel": 0.1},
+            batch_size = 1,
+            integral_batch_size = 100,
+        )
+        Pipe_domain.add_constraint(integral, f"Integral{i}")
     
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
-    data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
     key = "pt1"
 
     angle = (pi / 2) + theta
@@ -160,6 +166,22 @@ def run(cfg: ModulusConfig) -> None:
         batch_size = nr_points,
     )
     Pipe_domain.add_constraint(flow, "flow_data")
+    
+    # Lastly add inferencer
+    n_pts = int(1e5)
+    inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
+    
+    xs = inference_pts["x"]
+    ys = inference_pts["y"]
+    zs = inference_pts["z"]
+    
+    inf = PointwiseInferencer(
+        nodes = nodes,
+        invar = {"x": xs, "y": ys, "z": zs},
+        output_names = {"u", "v", "w", "p"},
+        batch_size = n_pts
+    )
+    Pipe_domain.add_inferencer(inf, "vtk_inf")
     
     # Make solver
     slv = Solver(cfg, Pipe_domain)
