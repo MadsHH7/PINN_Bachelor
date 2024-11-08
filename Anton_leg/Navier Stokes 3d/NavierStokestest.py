@@ -24,6 +24,10 @@ from modulus.sym.key import Key
 from pipe_bend_parameterized_geometry import PipeBend
 from modulus.sym.geometry import Parameterization
 from sympy import pi, cos, sin
+from PINN_Helper import get_data
+import numpy as np
+import os
+import torch
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
@@ -46,11 +50,9 @@ def run(cfg: ModulusConfig) -> None:
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
-
-    
     bend_angle_range = (1.323541349,1.323541349)
     radius_pipe_range = (0.1,0.1)
-    radius_bend_range = (0.1,0.1)
+    radius_bend_range = (0.2,0.2)
     inlet_pipe_length_range = (0.2,0.2)
     outlet_pipe_length_range = (1,1)
 
@@ -66,6 +68,7 @@ def run(cfg: ModulusConfig) -> None:
                     outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
     Pipe_domain = Domain()
+    Pipe.bend_planes_centers[-1]
     # Make outlet Geometry
 
     # geom_outlet = Pipe.outlet_pipe & Pipe.outlet_pipe_planes[-1]
@@ -127,58 +130,81 @@ def run(cfg: ModulusConfig) -> None:
  # Add integral planes to help the network learn the flow.
     # The planes tell the network how much fluid is moved through each plane on average.
 
-    centers = []
+    # centers = []
 
-    for elem in (Pipe.inlet_pipe_planes_centers):
-        centers.append(elem)
+    # for elem in (Pipe.inlet_pipe_planes_centers):
+    #     centers.append(elem)
 
-    for elem in Pipe.bend_planes_centers:
-        centers.append(elem)
+    # for elem in Pipe.bend_planes_centers:
+    #     centers.append(elem)
     
-    for elem in Pipe.outlet_pipe_planes_center:
-        centers.append(elem)
+    # for elem in Pipe.outlet_pipe_planes_center:
+    #     centers.append(elem)
 
-    planes = []
-    for elem in Pipe.inlet_pipe_planes:
-        planes.append(elem)
-    for elem in Pipe.bend_planes:
-        planes.append(elem)
-    for elem in Pipe.outlet_pipe_planes:
-        planes.append(elem)
+    # planes = []
+    # for elem in Pipe.inlet_pipe_planes:
+    #     planes.append(elem)
+    # for elem in Pipe.bend_planes:
+    #     planes.append(elem)
+    # for elem in Pipe.outlet_pipe_planes:
+    #     planes.append(elem)
     
-    print(centers[0])
-    lengths = []
-    lengths.append(sqrt( (Pipe.inlet_center[0]-centers[0][0])**2
-                        + (Pipe.inlet_center[1]-centers[0][1])**2) )
-    for i in range(len(planes)-1):
-        lengths.append(sqrt( (centers[i][0]-centers[i+1][0])**2
-                             + (centers[i][1]-centers[i+1][1])**2))
+    # print(centers[0])
+    # lengths = []
+    # lengths.append(sqrt( (Pipe.inlet_center[0]-centers[0][0])**2
+    #                     + (Pipe.inlet_center[1]-centers[0][1])**2) )
+    # for i in range(len(planes)-1):
+    #     lengths.append(sqrt( (centers[i][0]-centers[i+1][0])**2
+    #                          + (centers[i][1]-centers[i+1][1])**2))
     
-    # lengths.append(sqrt( (Pipe.outlet_center[0]-centers[-1][0])**2
-                        # + (Pipe.outlet_center[1]-centers[-1][1])**2) )
+    # # lengths.append(sqrt( (Pipe.outlet_center[0]-centers[-1][0])**2
+    #                     # + (Pipe.outlet_center[1]-centers[-1][1])**2) )
 
-    print("Length og lengths: ", len(lengths))
-    print("Length of planes: ", len(planes))
+    # print("Length og lengths: ", len(lengths))
+    # print("Length of planes: ", len(planes))
 
-    for i, (plane, length) in enumerate(zip(planes, lengths)):
-        mass_flow_rate = vel * length # Unit is m^2/s
-        print( )
-        print(mass_flow_rate)
-        print()
-        print(plane)
+    # for i, (plane, length) in enumerate(zip(planes, lengths)):
+    #     mass_flow_rate = vel * length # Unit is m^2/s
+    #     print( )
+    #     print(mass_flow_rate)
+    #     print()
+    #     print(plane)
 
-        integral_continuity = IntegralBoundaryConstraint(
-            nodes=nodes,
-            geometry=plane,
-            outvar={"normal_dot_vel": mass_flow_rate},
-            batch_size=1,
-            integral_batch_size=cfg.batch_size.IntegralContinuity,
-            # lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
-            parameterization=pr,
+    #     integral_continuity = IntegralBoundaryConstraint(
+    #         nodes=nodes,
+    #         geometry=plane,
+    #         outvar={"normal_dot_vel": mass_flow_rate},
+    #         batch_size=1,
+    #         integral_batch_size=cfg.batch_size.IntegralContinuity,
+    #         # lambda_weighting={"normal_dot_vel": cfg.custom.continuity_weight},
+    #         parameterization=pr,
+    #     )
+    #     Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+
+    theta = torch.tensor(float(pi/2))
+    rot_matrix = torch.tensor([[torch.cos(theta),-torch.sin(theta),0],
+                            [torch.sin(theta),torch.cos(theta),0],
+                            [0, 0, 1]])
+
+    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
+    key = "pt1"
+        
+    input, output, nr_points = get_data(
+            df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+            desired_input_keys=["x", "y", "z"],
+            original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+            desired_output_keys=["u", "v", "w", "p"],
+            original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+            rotation_matrix=rot_matrix,
         )
-        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-
+    flow = PointwiseConstraint.from_numpy(
+            nodes = nodes,
+            invar = input,
+            outvar = output,
+            batch_size = nr_points,
+        )
+    Pipe_domain.add_constraint(flow, "flow_data")
     # Make solver
     slv = Solver(cfg, Pipe_domain)
     
