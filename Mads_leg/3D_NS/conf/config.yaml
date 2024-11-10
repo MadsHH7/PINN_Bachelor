@@ -32,12 +32,12 @@ training:
   rec_inference_freq: 2000
   rec_monitor_freq: 1000
   rec_constraint_freq: 2000
-  max_steps : 100000
+  max_steps : 20000
 
 batch_size:
-  NoSlip: 2500
-  Interior: 2500
-  Inlet: 500
+  NoSlip: 200
+  Interior: 300
+  Inlet: 100
 
 graph:
   func_arch: true
