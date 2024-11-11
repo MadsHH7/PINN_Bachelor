@@ -201,7 +201,7 @@ def run(cfg: ModulusConfig) -> None:
     inference = PointwiseInferencer(
             nodes=nodes,
             invar={"x": xs, "y": ys, "z": zs},
-            output_names=["u", "v","w", "p"],
+            output_names=["u", "v", "p"],
             batch_size=nr_points,
         )
     Pipe_domain.add_inferencer(inference, "Inference")

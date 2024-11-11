@@ -39,7 +39,7 @@ batch_size:
   # PipeBend: 
   Walls: 200
   Interior: 400
-  IntegralContinuity: 50
+  IntegralContinuity: 100
 
 graph:
   func_arch: true
