@@ -1,3 +1,4 @@
 .venv/
 outputs/
 batch_outputs/
+batch_output/
