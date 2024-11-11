@@ -26,21 +26,24 @@ from PINN_Helper import get_data
 from pipe_bend_parameterized_geometry import *
 import numpy as np
 
-from modulus.sym.domain.inferencer import PointVTKInferencer, PointwiseInferencer
+from modulus.sym.domain.inferencer import PointwiseInferencer
 
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
     ns = NavierStokes(nu = 0.00002, rho = 500, dim = 3, time = False)
-    
+
+    # Setup things for the integral continuity condition
+    normal_dot_vel = NormalDotVec()
+
     # Create network
     flow_net = instantiate_arch(
         input_keys = [Key("x"), Key("y"), Key("z")],
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + normal_dot_vel.make_nodes()
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -55,6 +58,8 @@ def run(cfg: ModulusConfig) -> None:
     inlet_pipe_length_range=(0.2, 0.2) # 0.2 m rigtige tal
     outlet_pipe_length_range=(1.0, 1.0) # 1.0 m rigtige tal
     
+    in_vel = 0.1
+
     theta = bend_angle_range[1]
     radius = radius_pipe_range[1]
 
@@ -70,9 +75,10 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe.inlet_pipe,
-        outvar = {"u": 0.0, ("v"): 0.1, ("w"): 0.0},
+        outvar = {"u": 0.0, "v": in_vel, "w": 0.0},
         batch_size = cfg.batch_size.Inlet,
-        criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
+        criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2,
+        lambda_weighting={"u": 1, "v": 10, "w": 1}
     )
     Pipe_domain.add_constraint(Inlet, "Inlet")
     
@@ -116,22 +122,20 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    normal_dot_vel = NormalDotVec()
-    flow_nodes = nodes + normal_dot_vel.make_nodes()
-        
+    Volumetric_flow = pi * radius**2 * in_vel
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
     for i, plane in enumerate(all_planes):
         integral = IntegralBoundaryConstraint(
-            nodes = flow_nodes,
+            nodes = nodes,
             geometry = plane,
-            outvar = {"normal_dot_vel": 0.1},
+            outvar = {"normal_dot_vel": Volumetric_flow},
             batch_size = 1,
             integral_batch_size = 100,
         )
         Pipe_domain.add_constraint(integral, f"Integral{i}")
     
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
-    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    data_path = f"/home/madshh7/PINN_Bachelor/Data"
     key = "pt1"
 
     angle = (pi / 2) + theta
@@ -159,13 +163,13 @@ def run(cfg: ModulusConfig) -> None:
     
     # flow_data = np.full((nr_points, 1))
     
-    flow = PointwiseConstraint.from_numpy(
-        nodes = nodes,
-        invar = input,
-        outvar = output,
-        batch_size = nr_points,
-    )
-    Pipe_domain.add_constraint(flow, "flow_data")
+    # flow = PointwiseConstraint.from_numpy(
+    #     nodes = nodes,
+    #     invar = input,
+    #     outvar = output,
+    #     batch_size = nr_points,
+    # )
+    # Pipe_domain.add_constraint(flow, "flow_data")
     
     # Lastly add inferencer
     n_pts = int(1e5)

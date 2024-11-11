@@ -203,6 +203,12 @@ def get_data(
     df = rotate(df, ["x", "y", "z"], rotation_matrix)
     df = scale(df, ["x", "y", "z"], input_scaling)
     df = scale_velocity(df, desired_output_keys, velocity_scaling)
+    df = translate(df, ["u", "v", "w"], translation)
+    df = rotate(df, ["u", "v", "w"], rotation_matrix)
+    df = scale(df, ["u", "v", "w"], input_scaling)
+    df = scale_velocity(df, desired_output_keys, velocity_scaling)
+
+    
 
     input_dict, output_dict = split_invar_outvar(
         df,
