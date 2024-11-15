@@ -5,6 +5,7 @@ import numpy as np
 
 import modulus.sym
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
+from modulus.sym.eq.pdes.turbulence_zero_eq import ZeroEquation
 from modulus.sym.eq.pdes.basic import NormalDotVec
 
 from modulus.sym.solver import Solver
@@ -31,8 +32,10 @@ from modulus.sym.domain.inferencer import PointwiseInferencer
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
-    # Make equation
+    # Make equations
+    # ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = 0.1)
     ns = NavierStokes(nu = 0.00002, rho = 500, dim = 3, time = False)
+    # ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
 
     # Setup things for the integral continuity condition
     normal_dot_vel = NormalDotVec()
@@ -43,7 +46,8 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + normal_dot_vel.make_nodes()
+    # nodes = ze.make_nodes() + ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -78,7 +82,7 @@ def run(cfg: ModulusConfig) -> None:
         outvar = {"u": 0.0, "v": in_vel, "w": 0.0},
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2,
-        lambda_weighting={"u": 1, "v": 10, "w": 1}
+        lambda_weighting={"u": 10, "v": 10, "w": 10}
     )
     Pipe_domain.add_constraint(Inlet, "Inlet")
     
@@ -89,7 +93,8 @@ def run(cfg: ModulusConfig) -> None:
         geometry = Pipe.outlet_pipe,
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
-        criteria = ((x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 <= radius**2)
+        criteria = ((x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 <= radius**2),
+        lambda_weighting = {"p": 10}
     )
     Pipe_domain.add_constraint(Outlet, "Outlet")
 
@@ -122,44 +127,44 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    Volumetric_flow = pi * radius**2 * in_vel
-    all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    for i, plane in enumerate(all_planes):
-        integral = IntegralBoundaryConstraint(
-            nodes = nodes,
-            geometry = plane,
-            outvar = {"normal_dot_vel": Volumetric_flow},
-            batch_size = 1,
-            integral_batch_size = 100,
-        )
-        Pipe_domain.add_constraint(integral, f"Integral{i}")
+    # Volumetric_flow = pi * radius**2 * in_vel
+    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
+    # for i, plane in enumerate(all_planes):
+    #     integral = IntegralBoundaryConstraint(
+    #         nodes = nodes,
+    #         geometry = plane,
+    #         outvar = {"normal_dot_vel": Volumetric_flow},
+    #         batch_size = 1,
+    #         integral_batch_size = 100,
+    #     )
+    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
-    data_path = f"/home/madshh7/PINN_Bachelor/Data"
-    key = "pt1"
+    # # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    # key = "pt1"
 
-    angle = (pi / 2) + theta
-    rot_matrix = (
-        [float(cos(angle)), float(-sin(angle)), 0],
-        [float(sin(angle)), float(cos(angle)), 0],
-        [0, 0, 1]
-    )
+    # angle = (pi / 2) + theta
+    # rot_matrix = (
+    #     [float(cos(angle)), float(-sin(angle)), 0],
+    #     [float(sin(angle)), float(cos(angle)), 0],
+    #     [0, 0, 1]
+    # )
 
-    translate= ([
-        0,
-        inlet_pipe_length_range[-1],
-        0
-    ])
+    # translate= ([
+    #     0,
+    #     inlet_pipe_length_range[-1],
+    #     0
+    # ])
 
-    input, output, nr_points = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-        desired_input_keys=["x", "y", "z"],
-        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-        desired_output_keys=["u", "v", "w", "p"],
-        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-        rotation_matrix= rot_matrix,
-        translation=translate
-    )
+    # input, output, nr_points = get_data(
+    #     df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+    #     desired_input_keys=["x", "y", "z"],
+    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+    #     desired_output_keys=["u", "v", "w", "p"],
+    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+    #     rotation_matrix= rot_matrix,
+    #     translation=translate
+    # )
     
     # flow_data = np.full((nr_points, 1))
     
@@ -172,7 +177,7 @@ def run(cfg: ModulusConfig) -> None:
     # Pipe_domain.add_constraint(flow, "flow_data")
     
     # Lastly add inferencer
-    n_pts = int(1e5)
+    n_pts = int(5e4)
     inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
     
     xs = inference_pts["x"]
