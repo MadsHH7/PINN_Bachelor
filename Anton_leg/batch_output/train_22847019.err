@@ -1,8 +1,0 @@
-Loaded module: cuda/12.6.1
-Loaded dependency [python3/3.10.13]: sqlite3/3.45.1
-Loaded dependency [python3/3.10.13]: gcc/12.3.0-binutils-2.40
-
-Loading python3/3.10.13
-  Loading requirement: sqlite3/3.45.1 gcc/12.3.0-binutils-2.40
-/zhome/e3/5/167986/.lsbatch/1728036388.22847019.shell: line 25: cd: /2D Laplace: No such file or directory
-python: can't open file '/zhome/e3/5/167986/Desktop/Bachelor PINNS/laplace2dDoc.py': [Errno 2] No such file or directory
