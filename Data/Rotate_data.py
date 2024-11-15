@@ -12,7 +12,8 @@ def translate(df, keys, translation):
         df[keys] = df[keys] - translation
     return df
 
-key = "15"
+key = "1"
+pct_data = 0.01
 
 df = pd.read_csv(f'U0pt{key}_Laminar.csv')
 
@@ -38,5 +39,7 @@ translation= ([
 df = rotate(df, keys_pts, rot_matrix)
 df = rotate(df, keys_vel, rot_matrix)
 df = translate(df, keys_pts, translation)
+
+df = df.sample(frac = pct_data, random_state=42)
 
 df.to_csv(f'U0pt{key}_Laminar_rot.csv', index=False)
