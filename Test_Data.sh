@@ -27,15 +27,15 @@
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
 
 ###BSUB -o /zhome/e1/d/168534/Desktop/Test_%J.out
-#BSUB -o batch_outputs/Standard_Data.out
-#BSUB -e batch_outputs/Standard_Data.err
+#BSUB -o batch_outputs/Standard_Data_rot.out
+#BSUB -e batch_outputs/Standard_Data_rot.err
 ###BSUB -e batch_outputs/Test_%J.err
 # -- end of LSF options --
 
 ### module load python3/3.10.13 cuda/12.6.1 cudnn/v8.9.7.29-prod-cuda-12.X cudnn/v8.9.7.29-prod-cuda-12.X
 module load cuda/12.6.1 python3/3.10.13
 source .venv/bin/activate
-cd /zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/batch_outputs/Standard_With_Data/
+cd /zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/batch_outputs/Standard_Rotate_data/
 python -u 3D_Pipe.py
 
 ### Calls with bsub < [Name of sh script]

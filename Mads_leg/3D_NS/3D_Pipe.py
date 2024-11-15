@@ -139,32 +139,32 @@ def run(cfg: ModulusConfig) -> None:
     #     )
     #     Pipe_domain.add_constraint(integral, f"Integral{i}")
     
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
     # # data_path = f"/home/madshh7/PINN_Bachelor/Data"
-    # key = "pt1"
+    key = "pt1"
 
-    # angle = (pi / 2) + theta
-    # rot_matrix = (
-    #     [float(cos(angle)), float(-sin(angle)), 0],
-    #     [float(sin(angle)), float(cos(angle)), 0],
-    #     [0, 0, 1]
-    # )
+    angle = (pi / 2) + theta
+    rot_matrix = (
+        [float(cos(angle)), float(-sin(angle)), 0],
+        [float(sin(angle)), float(cos(angle)), 0],
+        [0, 0, 1]
+    )
 
-    # translate= ([
-    #     0,
-    #     inlet_pipe_length_range[-1],
-    #     0
-    # ])
+    translate= ([
+        0,
+        inlet_pipe_length_range[-1],
+        0
+    ])
 
-    # input, output, nr_points = get_data(
-    #     df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-    #     desired_input_keys=["x", "y", "z"],
-    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-    #     desired_output_keys=["u", "v", "w", "p"],
-    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-    #     rotation_matrix= rot_matrix,
-    #     translation=translate
-    # )
+    input, output, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+        desired_input_keys=["x", "y", "z"],
+        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+        desired_output_keys=["u", "v", "w", "p"],
+        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+        rotation_matrix= rot_matrix,
+        translation=translate
+    )
     
     # flow_data = np.full((nr_points, 1))
     
