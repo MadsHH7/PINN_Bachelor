@@ -6,7 +6,6 @@ from modulus.sym.geometry.primitives_3d import Cone, Plane
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pdes.turbulence_zero_eq import ZeroEquation
 from modulus.sym.eq.pdes.basic import NormalDotVec
-from modulus.sym.domain.inferencer import PointwiseInferencer, PointVTKInferencer
 
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
@@ -25,49 +24,28 @@ from modulus.sym.key import Key
 from pipe_bend_parameterized_geometry import PipeBend
 from modulus.sym.geometry import Parameterization
 from sympy import pi, cos, sin
-from PINN_Helper import get_data
-import numpy as np
-import os
-import torch
-from modulus.sym.utils.io import (
-    csv_to_dict,
-    ValidatorPlotter,
-    InferencerPlotter)
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ze = ZeroEquation(nu = 0.00002, max_distance=0.1 , rho = 500.0, dim = 3, time = False)
-    ns = NavierStokes(nu = ze.equations["nu"], rho = 500.0, dim = 3, time = False)
-    # ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
-    # max_distance kan bruge signed_distance fields i stedet for radius
-    # Betyder at hvert punkt i dit rum får en afstand til geometriens overfflade. Fortæller om du er inde eller uden for geomtrien, og hvor langt fra den du er.
-    # Kan bruge sympy til at definere max distance sim max sdf
-
-    # normal_dot_vel = NormalDotVec(["u", "v","w"])
-    vel = Symbol("vel")
-    parameters ={"vel":(5,30)}
-    pr = Parameterization(parameters)
-
+    ns = NavierStokes(nu = 0.01, rho = 1.0, dim = 3, time = False)
+    
     # Create network
     flow_net = instantiate_arch(
         input_keys = [Key("x"), Key("y"), Key("z")],
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
-    nodes = ns.make_nodes()+ze.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
     bend_angle_range = (1.323541349,1.323541349)
-    # bend_angle_range = (pi/2,pi/2)
-    radius_pipe_range = (0.1,0.1)
-    radius_bend_range = (0.2,0.2)
-    # inlet_pipe_length_range = (1,1)
-    inlet_pipe_length_range = (0.2,0.2)
-    outlet_pipe_length_range = (1,1)
+    radius_pipe_range = (1,1)
+    radius_bend_range = (1,1)
+    inlet_pipe_length_range = (5,5)
+    outlet_pipe_length_range = (5,5)
 
     bend_angle = bend_angle_range[0]
     radius = radius_pipe_range[0]
@@ -80,8 +58,9 @@ def run(cfg: ModulusConfig) -> None:
                     inlet_pipe_length_range=inlet_pipe_length_range,
                     outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
+    pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
-    Pipe.bend_planes_centers[-1]
+    
     # Make outlet Geometry
 
     # geom_outlet = Pipe.outlet_pipe & Pipe.outlet_pipe_planes[-1]
@@ -99,9 +78,9 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.inlet_pipe,
-        outvar = {"u": 0.0, "v": 0.1, "w": 0.0},
+        outvar = {"u": 0.0, "v": 1.0, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
+        criteria=Eq(y,Pipe.inlet_center[1]),
     )
 
     Pipe_domain.add_constraint(Inlet,"Inlet")
@@ -125,7 +104,7 @@ def run(cfg: ModulusConfig) -> None:
         criteria=And(
             ((x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2),
             ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 > radius**2),
-    )
+        )
     )
 
     Pipe_domain.add_constraint(Walls,"Walls")
@@ -135,18 +114,9 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.geometry,
         outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
         batch_size= cfg.batch_size.Interior,
-        lambda_weighting = {
-            "continuity": Symbol("sdf"),
-            "momentum_x": Symbol("sdf"),
-            "momentum_y": Symbol("sdf"),
-            "momentum_z": Symbol("sdf"),
-        } 
     )
 
     Pipe_domain.add_constraint(Interior,"Interior")
-
-    ## Attempt 2 at integral conditions
-    # Integral constraints bruges mest hvis vi ikke har data.
 
     normal_dot_vel = NormalDotVec()
     flow_nodes = nodes + normal_dot_vel.make_nodes()
@@ -166,82 +136,14 @@ def run(cfg: ModulusConfig) -> None:
         )
         Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
-    key = "pt1"
-    angle = (pi / 2) + bend_angle
-    rot_matrix = (
-        [float(cos(angle)), float(-sin(angle)), 0],
-        [float(sin(angle)), float(cos(angle)), 0],
-        [0, 0, 1]
-    )
-
-    translate= ([
-        0,
-        inlet_pipe_length_range[-1],
-        0
-    ])
-
-
-    input, output, nr_points = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-        desired_input_keys=["x", "y", "z"],
-        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-        desired_output_keys=["u", "v", "w", "p"],
-        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-        rotation_matrix= rot_matrix,
-        translation=translate
-    )
-    
-    # flow_data = np.full((nr_points, 1))
-    
-    flow = PointwiseConstraint.from_numpy(
-        nodes = nodes,
-        invar = input,
-        outvar = output,
-        batch_size = nr_points,
-    )
-    # Pipe_domain.add_constraint(flow, "flow_data")
-
-
-
-
-    nr_points=int(1e4)
-    
-    
-    inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
-    
-    xs = inference_pts["x"]
-    ys = inference_pts["y"]
-    zs = inference_pts["z"]
-
-    inference = PointwiseInferencer(
-            nodes=nodes,
-            invar={"x": xs, "y": ys, "z": zs},
-            output_names=["u", "v","w", "p"],
-            batch_size=nr_points,
-        )
-    Pipe_domain.add_inferencer(inference, "Inference")
-
+    # Make solver
     slv = Solver(cfg, Pipe_domain)
     
     # Start solver
     slv.solve()
-    
-
     
     
 if __name__ == "__main__":
     run()
     # Paraview
     # u*iHat + v*jHat + w*kHat
-
-# Integral continuty planes
-# Tilføj dem for at tvinge flow gennem røret
-# laver tværsnit i røret som siger at integralet igennem snittet skal flow være det samme.
-# Lav en constrint der integrer (summer for at gøre det diskret), det skal altid være det samme.
-
-# class: Integralboundaryconstraint
-
-# Husk at fjerne disconuitet ved inlet.
-# Man kan ændre learning rate ved at stoppe trænningen og ændre navnet på optime_checkpoint
-# Den vil køre videre med samme model, men bruge den nye learning rate.

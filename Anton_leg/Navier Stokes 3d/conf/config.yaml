@@ -38,7 +38,7 @@ batch_size:
   # NoSlip: 4000
   # PipeBend: 
   Walls: 1000
-  Interior: 1000
+  Interior: 5000
   IntegralContinuity: 50
 
 graph:
