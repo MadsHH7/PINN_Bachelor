@@ -13,7 +13,7 @@ def translate(df, keys, translation):
     return df
 
 key = "1"
-pct_data = 0.01
+pct_data = 0.001
 
 df = pd.read_csv(f'U0pt{key}_Laminar.csv')
 
@@ -31,8 +31,8 @@ rot_matrix = (
     )
 
 translation= ([
-        0,
-        0.2,
+        -0.05,
+        -0.2,
         0
     ])
 
