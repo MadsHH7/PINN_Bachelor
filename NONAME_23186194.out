@@ -1,0 +1,38 @@
+/bin/bash: line 1: ./OnlyPhysicsNegative.sh: Permission denied
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 23186194: <NONAME> in cluster <dcc> Exited
+
+Job <NONAME> was submitted from host <hpclogin1> by user <s214728> in cluster <dcc> at Fri Nov 15 14:49:45 2024
+Job was executed on host(s) <n-62-31-22>, in queue <hpc>, as user <s214728> in cluster <dcc> at Fri Nov 15 14:49:47 2024
+</zhome/e3/5/167986> was used as the home directory.
+</zhome/e3/5/167986/Desktop/PINN_Bachelor> was used as the working directory.
+Started at Fri Nov 15 14:49:47 2024
+Terminated at Fri Nov 15 14:49:47 2024
+Results reported at Fri Nov 15 14:49:47 2024
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+OnlyPhysicsNegative.sh
+------------------------------------------------------------
+
+Exited with exit code 126.
+
+Resource usage summary:
+
+    CPU time :                                   0.44 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     1024.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   39 sec.
+    Turnaround time :                            2 sec.
+
+The output (if any) is above this job summary.
+

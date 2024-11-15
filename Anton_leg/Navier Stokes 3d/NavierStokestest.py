@@ -37,17 +37,17 @@ from modulus.sym.utils.io import (
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ze = ZeroEquation(nu = 0.00002, max_distance=0.1 , rho = 500.0, dim = 3, time = False)
-    ns = NavierStokes(nu = ze.equations["nu"], rho = 500.0, dim = 3, time = False)
-    # ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
+    # ze = ZeroEquation(nu = 0.00002, max_distance=0.1 , rho = 500.0, dim = 3, time = False)
+    # ns = NavierStokes(nu = ze.equations["nu"], rho = 500.0, dim = 3, time = False)
+    ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
     # max_distance kan bruge signed_distance fields i stedet for radius
     # Betyder at hvert punkt i dit rum får en afstand til geometriens overfflade. Fortæller om du er inde eller uden for geomtrien, og hvor langt fra den du er.
     # Kan bruge sympy til at definere max distance sim max sdf
 
     # normal_dot_vel = NormalDotVec(["u", "v","w"])
-    vel = Symbol("vel")
-    parameters ={"vel":(5,30)}
-    pr = Parameterization(parameters)
+    # vel = Symbol("vel")
+    # parameters ={"vel":(5,30)}
+    # pr = Parameterization(parameters)
 
     # Create network
     flow_net = instantiate_arch(
@@ -55,8 +55,8 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
-    nodes = ns.make_nodes()+ze.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    # nodes = ns.make_nodes()+ze.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -80,8 +80,9 @@ def run(cfg: ModulusConfig) -> None:
                     inlet_pipe_length_range=inlet_pipe_length_range,
                     outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
+    pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
-    Pipe.bend_planes_centers[-1]
+    # Pipe.bend_planes_centers[-1]
     # Make outlet Geometry
 
     # geom_outlet = Pipe.outlet_pipe & Pipe.outlet_pipe_planes[-1]
@@ -101,7 +102,8 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.inlet_pipe,
         outvar = {"u": 0.0, "v": 0.1, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
-        criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
+        criteria=Eq(y,Pipe.inlet_center[1]),
+        # criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
     )
 
     Pipe_domain.add_constraint(Inlet,"Inlet")
@@ -166,61 +168,61 @@ def run(cfg: ModulusConfig) -> None:
         )
         Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
-    key = "pt1"
-    angle = (pi / 2) + bend_angle
-    rot_matrix = (
-        [float(cos(angle)), float(-sin(angle)), 0],
-        [float(sin(angle)), float(cos(angle)), 0],
-        [0, 0, 1]
-    )
+    # data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
+    # key = "pt1"
+    # angle = (pi / 2) + bend_angle
+    # rot_matrix = (
+    #     [float(cos(angle)), float(-sin(angle)), 0],
+    #     [float(sin(angle)), float(cos(angle)), 0],
+    #     [0, 0, 1]
+    # )
 
-    translate= ([
-        0,
-        inlet_pipe_length_range[-1],
-        0
-    ])
+    # translate= ([
+    #     0,
+    #     inlet_pipe_length_range[-1],
+    #     0
+    # ])
 
 
-    input, output, nr_points = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-        desired_input_keys=["x", "y", "z"],
-        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-        desired_output_keys=["u", "v", "w", "p"],
-        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-        rotation_matrix= rot_matrix,
-        translation=translate
-    )
+    # input, output, nr_points = get_data(
+    #     df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+    #     desired_input_keys=["x", "y", "z"],
+    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+    #     desired_output_keys=["u", "v", "w", "p"],
+    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+    #     rotation_matrix= rot_matrix,
+    #     translation=translate
+    # )
     
-    # flow_data = np.full((nr_points, 1))
+    # # flow_data = np.full((nr_points, 1))
     
-    flow = PointwiseConstraint.from_numpy(
-        nodes = nodes,
-        invar = input,
-        outvar = output,
-        batch_size = nr_points,
-    )
+    # flow = PointwiseConstraint.from_numpy(
+    #     nodes = nodes,
+    #     invar = input,
+    #     outvar = output,
+    #     batch_size = nr_points,
+    # )
     # Pipe_domain.add_constraint(flow, "flow_data")
 
 
 
 
-    nr_points=int(1e4)
+    # nr_points=int(1e4)
     
     
-    inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
+    # inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
     
-    xs = inference_pts["x"]
-    ys = inference_pts["y"]
-    zs = inference_pts["z"]
+    # xs = inference_pts["x"]
+    # ys = inference_pts["y"]
+    # zs = inference_pts["z"]
 
-    inference = PointwiseInferencer(
-            nodes=nodes,
-            invar={"x": xs, "y": ys, "z": zs},
-            output_names=["u", "v","w", "p"],
-            batch_size=nr_points,
-        )
-    Pipe_domain.add_inferencer(inference, "Inference")
+    # inference = PointwiseInferencer(
+    #         nodes=nodes,
+    #         invar={"x": xs, "y": ys, "z": zs},
+    #         output_names=["u", "v","w", "p"],
+    #         batch_size=nr_points,
+    #     )
+    # Pipe_domain.add_inferencer(inference, "Inference")
 
     slv = Solver(cfg, Pipe_domain)
     
