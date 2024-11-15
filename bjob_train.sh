@@ -9,7 +9,7 @@
 ### -- Select the resources: 1 gpu in exclusive process mode --
 #BSUB -gpu "num=1:mode=exclusive_process"
 ### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
-#BSUB -W 01:00
+#BSUB -W 10:00
 # specify system resources  
 #BSUB -R "span[hosts=1]"
 #BSUB -R "rusage[mem = 2GB]"
@@ -22,5 +22,4 @@
 cd ..
 module load cuda/12.6.1  python3/3.10.13
 source PINN/bin/activate
-cd /PINN_Bachelor/batch_output/Navier Stokes 3d
-python -u NavierStoketest.py
+python -u PINN_Bachelor/batch_output/NavierStokestest.py

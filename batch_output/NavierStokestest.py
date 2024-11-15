@@ -37,7 +37,8 @@ from modulus.sym.utils.io import (
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ns = NavierStokes(nu = 0.01, rho = 500.0, dim = 3, time = False)
+    ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
+    ze = ZeroEquation(nu = 0.00002, max_distance=0.1 , rho = 500.0, dim = 3, time = False)
 
     # normal_dot_vel = NormalDotVec(["u", "v","w"])
     vel = Symbol("vel")
@@ -50,7 +51,7 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes()+ze.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -132,6 +133,16 @@ def run(cfg: ModulusConfig) -> None:
 
     Pipe_domain.add_constraint(Interior,"Interior")
 
+    Zero_Equation = PointwiseInteriorConstraint(
+        nodes = nodes,
+        geometry= Pipe.geometry,
+        outvar={"nu": 0.0,},
+        batch_size= cfg.batch_size.Interior,
+        criteria=(x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2,   
+    )
+
+    Pipe_domain.add_constraint(Zero_Equation,"Zero_Equation")
+
     ## Attempt 2 at integral conditions
 
     normal_dot_vel = NormalDotVec()
@@ -149,7 +160,7 @@ def run(cfg: ModulusConfig) -> None:
             batch_size=1,
             integral_batch_size=100,
         )
-        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+        # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
@@ -184,12 +195,12 @@ def run(cfg: ModulusConfig) -> None:
         outvar = output,
         batch_size = nr_points,
     )
-    Pipe_domain.add_constraint(flow, "flow_data")
+    # Pipe_domain.add_constraint(flow, "flow_data")
 
 
 
 
-    nr_points=int(1e5)
+    nr_points=int(1e3)
     
     
     inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
@@ -201,7 +212,7 @@ def run(cfg: ModulusConfig) -> None:
     inference = PointwiseInferencer(
             nodes=nodes,
             invar={"x": xs, "y": ys, "z": zs},
-            output_names=["u", "v", "p"],
+            output_names=["u", "v","w", "p"],
             batch_size=nr_points,
         )
     Pipe_domain.add_inferencer(inference, "Inference")
