@@ -37,8 +37,12 @@ from modulus.sym.utils.io import (
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
     ze = ZeroEquation(nu = 0.00002, max_distance=0.1 , rho = 500.0, dim = 3, time = False)
+    ns = NavierStokes(nu = ze.equations["nu"], rho = 500.0, dim = 3, time = False)
+    # ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
+    # max_distance kan bruge signed_distance fields i stedet for radius
+    # Betyder at hvert punkt i dit rum får en afstand til geometriens overfflade. Fortæller om du er inde eller uden for geomtrien, og hvor langt fra den du er.
+    # Kan bruge sympy til at definere max distance sim max sdf
 
     # normal_dot_vel = NormalDotVec(["u", "v","w"])
     vel = Symbol("vel")
@@ -51,14 +55,17 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
+    # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
     nodes = ns.make_nodes()+ze.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
     bend_angle_range = (1.323541349,1.323541349)
+    # bend_angle_range = (pi/2,pi/2)
     radius_pipe_range = (0.1,0.1)
     radius_bend_range = (0.2,0.2)
+    # inlet_pipe_length_range = (1,1)
     inlet_pipe_length_range = (0.2,0.2)
     outlet_pipe_length_range = (1,1)
 
@@ -133,24 +140,26 @@ def run(cfg: ModulusConfig) -> None:
 
     Pipe_domain.add_constraint(Interior,"Interior")
 
-    Zero_Equation = PointwiseInteriorConstraint(
-        nodes = nodes,
-        geometry= Pipe.geometry,
-        outvar={"nu": 0.0,},
-        batch_size= cfg.batch_size.Interior,
-        criteria=(x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2,   
-    )
+    # Zero_Equation = PointwiseInteriorConstraint(
+    #     nodes = nodes,
+    #     geometry= Pipe.geometry,
+    #     outvar={"nu": 0.0,},
+    #     batch_size= cfg.batch_size.Interior,
+    #     criteria=(x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2,   
+    # )
 
-    Pipe_domain.add_constraint(Zero_Equation,"Zero_Equation")
+    # Pipe_domain.add_constraint(Zero_Equation,"Zero_Equation")
 
     ## Attempt 2 at integral conditions
+    # Integral constraints bruges mest hvis vi ikke har data.
 
     normal_dot_vel = NormalDotVec()
     flow_nodes = nodes + normal_dot_vel.make_nodes()
 
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    mass_flow_rate = -0.1 * pi*radius**2 # Unit is m^2/s
+    mass_flow_rate = 0.1 * pi*radius**2 # Unit is m^2/s
 
+    #D
     for i,plane in enumerate(all_planes):
         
         integral_continuity = IntegralBoundaryConstraint(
@@ -160,7 +169,7 @@ def run(cfg: ModulusConfig) -> None:
             batch_size=1,
             integral_batch_size=100,
         )
-        # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"

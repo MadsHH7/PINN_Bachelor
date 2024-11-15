@@ -201,6 +201,7 @@ def get_data(
 
     df = translate(df, ["x", "y", "z"], translation)
     df = rotate(df, ["x", "y", "z"], rotation_matrix)
+    df = rotate(df, ["u", "v", "w"], rotation_matrix)
     df = scale(df, ["x", "y", "z"], input_scaling)
     df = scale_velocity(df, desired_output_keys, velocity_scaling)
 
