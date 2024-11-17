@@ -2,6 +2,7 @@ from sympy import Eq, And, Symbol, sqrt, cos, sin, pi, Max
 import os
 
 import numpy as np
+import torch
 
 import modulus.sym
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
@@ -11,7 +12,7 @@ from modulus.sym.eq.pdes.basic import NormalDotVec
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
 
-from modulus.sym.hydra import instantiate_arch, ModulusConfig
+from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
 
 from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
@@ -28,12 +29,17 @@ from pipe_bend_parameterized_geometry import *
 import numpy as np
 
 from modulus.sym.domain.inferencer import PointwiseInferencer
+from modulus.sym.domain.monitor import PointwiseMonitor
+
+from modulus.sym.utils.io import csv_to_dict
 
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equations
-    ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    nu = Symbol("nu")
+
+    ze = ZeroEquation(nu = nu, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
     ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
     # ze = ZeroEquation(nu = 0.01, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
     # ns = NavierStokes(nu = ze.equations["nu"], rho = 1.0, dim = 3, time = False)
@@ -48,8 +54,16 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
+    invert_net = instantiate_arch(
+        input_keys = [Key("x"), Key("y"), Key("z")],
+        output_keys = [Key("nu")],
+        cfg = cfg.arch.fully_connected,
+    )
+
+    # Create nodes
+    nodes = ze.make_nodes() + ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + [invert_net.make_node(name = "invert_net")]
+
     # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
-    nodes = ze.make_nodes() + ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
     # nodes = ze.make_nodes() + ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
     
     # Make geometry
@@ -149,50 +163,78 @@ def run(cfg: ModulusConfig) -> None:
     #     )
     #     Pipe_domain.add_constraint(integral, f"Integral{i}")
     
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
-    # # data_path = f"/home/madshh7/PINN_Bachelor/Data"
-    # key = "pt1"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    key = "pt1"
 
-    # input, output, nr_points = get_data(
-    #     df_path= os.path.join(data_path, f"U0{key}_Laminar_rot.csv"),
-    #     desired_input_keys=["x", "y", "z"],
-    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-    #     desired_output_keys=["u", "v", "w", "p"],
-    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-    # )
+    input, output, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar_rot.csv"),
+        desired_input_keys=["x", "y", "z"],
+        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+        desired_output_keys=["u", "v", "w", "p"],
+        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+    )
     
-    # flow_data = np.full((nr_points, 1), fill_value=100.0)
+    flow_data = np.full((nr_points, 1), fill_value=100.0)
     
-    # flow = PointwiseConstraint.from_numpy(
-    #     nodes = nodes,
-    #     invar = input,
-    #     outvar = output,
-    #     batch_size = nr_points,
-    #     lambda_weighting={
-    #         "u": flow_data,
-    #         "v": flow_data,
-    #         "w": flow_data,
-    #         "p": flow_data,
-    #     }
-    # )
-    # Pipe_domain.add_constraint(flow, "flow_data")
+    flow = PointwiseConstraint.from_numpy(
+        nodes = nodes,
+        invar = input,
+        outvar = output,
+        batch_size = nr_points,
+        lambda_weighting={
+            "u": flow_data,
+            "v": flow_data,
+            "w": flow_data,
+            "p": flow_data,
+        }
+    )
+    Pipe_domain.add_constraint(flow, "flow_data")
     
     # Lastly add inferencer
-    # n_pts = int(5e4)
-    # inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
+    n_pts = int(5e4)
+    inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
     
-    # xs = inference_pts["x"]
-    # ys = inference_pts["y"]
-    # zs = inference_pts["z"]
+    xs = inference_pts["x"]
+    ys = inference_pts["y"]
+    zs = inference_pts["z"]
     
-    # inf = PointwiseInferencer(
-    #     nodes = nodes,
-    #     invar = {"x": xs, "y": ys, "z": zs},
-    #     output_names = {"u", "v", "w", "p"},
-    #     batch_size = n_pts
-    # )
-    # Pipe_domain.add_inferencer(inf, "vtk_inf")
+    inf = PointwiseInferencer(
+        nodes = nodes,
+        invar = {"x": xs, "y": ys, "z": zs},
+        output_names = {"u", "v", "w", "p"},
+        batch_size = n_pts
+    )
+    Pipe_domain.add_inferencer(inf, "vtk_inf")
     
+    # Create dict for monitor
+    mapping = {
+        "Velocity[i] (m/s)": "u",
+        "Velocity[j] (m/s)": "v",
+        "Velocity[k] (m/s)": "w",
+        "X (m)": "x",
+        "Y (m)": "y",
+        "Z (m)": "z",
+    }
+
+    csv_var = csv_to_dict(
+        to_absolute_path("/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/U0pt1_Laminar_rot.csv"), mapping
+    )
+
+    csv_var_numpy = {
+        key: value for key, value in csv_var.items() if key in ["x", "y", "z"]
+    }
+
+    # Add monitor to keep track of the estimated nu
+    monitor = PointwiseMonitor(
+        csv_var_numpy,
+        output_names=["nu"],
+        metrics={"mean_nu": lambda var: torch.mean(var["nu"])},
+        nodes=nodes,
+    )
+    Pipe_domain.add_monitor(monitor)
+
+
     # Make solver
     slv = Solver(cfg, Pipe_domain)
     
