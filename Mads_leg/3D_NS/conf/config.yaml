@@ -27,7 +27,7 @@ defaults :
 #   decay_steps: 4000
 
 training:
-  rec_results_fred: 100
+  rec_results_freq: 100
   rec_validation_freq: 100
   rec_inference_freq: 1000 #2000
   rec_monitor_freq: 1000
@@ -35,8 +35,8 @@ training:
   max_steps : 20000
 
 batch_size:
-  NoSlip: 2500
-  Interior: 2500
+  NoSlip: 5000
+  Interior: 5000
   Inlet: 1000
 
 graph:

@@ -31,8 +31,8 @@ rot_matrix = (
     )
 
 translation= ([
-        0,
-        0.2,
+        -0.05,
+        -0.2,
         0
     ])
 
