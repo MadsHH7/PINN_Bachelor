@@ -122,7 +122,7 @@ def run(cfg: ModulusConfig) -> None:
     flow_nodes = nodes + normal_dot_vel.make_nodes()
 
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    mass_flow_rate = 0.1 * pi*radius**2 # Unit is m^2/s
+    mass_flow_rate = -0.1 * pi*radius**2 # Unit is m^2/s
 
     for i,plane in enumerate(all_planes):
         
