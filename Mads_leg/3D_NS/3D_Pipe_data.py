@@ -127,19 +127,6 @@ def run(cfg: ModulusConfig) -> None:
     )
     Pipe_domain.add_constraint(Interior, "Interior")
     
-    # Integral constraint
-    # Volumetric_flow = pi * radius**2 * in_vel
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    # for i, plane in enumerate(all_planes):
-    #     integral = IntegralBoundaryConstraint(
-    #         nodes = nodes,
-    #         geometry = plane,
-    #         outvar = {"normal_dot_vel": Volumetric_flow},
-    #         batch_size = 1,
-    #         integral_batch_size = 100,
-    #     )
-    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
-    
     data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
     # data_path = f"/home/madshh7/PINN_Bachelor/Data"
     key = "pt1"
