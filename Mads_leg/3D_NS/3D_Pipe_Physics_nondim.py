@@ -40,7 +40,7 @@ from modulus.sym.eq.non_dim import NonDimensionalizer, Scaler
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Physical quantities
-    nu = quantity(0.00002, "kg/(m*s)")
+    nu = quantity(0.00002, "m^2/s")
     rho = quantity(500, "kg/m^3")
     inlet_u = quantity(0.0, "m/s")
     inlet_v = quantity(0.1, "m/s")
@@ -51,11 +51,12 @@ def run(cfg: ModulusConfig) -> None:
     outlet_p = quantity(0.0, "pa")
     velocity_scale = inlet_v
     density_scale = rho
-    length_scale = quantity(1.0, "m")
+    length_scale = quantity(0.2, "m")
     
     nd = NonDimensionalizer(
         length_scale=length_scale,
         mass_scale=density_scale * (length_scale**3),
+        time_scale=length_scale / velocity_scale
     )
     
     # Define the geometry
@@ -83,11 +84,12 @@ def run(cfg: ModulusConfig) -> None:
     radius = radius_bend_range_nd[-1]
     
     # Make equations
-    ze = ZeroEquation(nu = nd.ndim(nu), dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
+    # ze = ZeroEquation(nu = nd.ndim(nu), dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    # ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
+    ns = NavierStokes(nu=nd.ndim(nu), rho=nd.ndim(rho), dim=3, time=False)
     
     # Setup things for the integral continuity condition
-    normal_dot_vel = NormalDotVec()
+    # normal_dot_vel = NormalDotVec()
 
     # Create network
     flow_net = instantiate_arch(
@@ -98,14 +100,14 @@ def run(cfg: ModulusConfig) -> None:
 
     # Create nodes
     nodes = (
-        ze.make_nodes()
-        + ns.make_nodes() 
+        ns.make_nodes() 
+        # + ze.make_nodes()
         # + normal_dot_vel.make_nodes() 
         + [flow_net.make_node(name = "flow_network")]
         + Scaler(
             ["u", "v", "w", "p"],
             ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
-            ["m/s", "m/s", "m/s","kg/(m*s^2)"],
+            ["m/s", "m/s", "m/s","pa"],
             nd
         ).make_node()
     )
@@ -167,7 +169,7 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    # Volumetric_flow = pi * radius**2 * in_vel
+    # Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
     # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
     # for i, plane in enumerate(all_planes):
     #     integral = IntegralBoundaryConstraint(
@@ -190,7 +192,7 @@ def run(cfg: ModulusConfig) -> None:
     inf = PointwiseInferencer(
         nodes = nodes,
         invar = {"x": xs, "y": ys, "z": zs},
-        output_names = {"u", "v", "w", "p"},
+        output_names = {"u_scaled", "v_scaled", "w_scaled", "p_scaled"},
         batch_size = n_pts
     )
     Pipe_domain.add_inferencer(inf, "vtk_inf")
@@ -207,6 +209,7 @@ if __name__ == "__main__":
     run()
     # Paraview
     # u*iHat + v*jHat + w*kHat
+    # u_scaled*iHat+v_scaled*jHat+w_scaled*kHat
     # "Velocity[i] (m/s)" * iHat + "Velocity[j] (m/s)" * jHat + "Velocity[k] (m/s)" * kHat
 
     # DTU HPC interactive
