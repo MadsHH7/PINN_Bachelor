@@ -28,7 +28,8 @@ from sympy import pi, cos, sin
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    ns = NavierStokes(nu = 0.01, rho = 1.0, dim = 3, time = False)
+    ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
+    # ns = NavierStokes(nu = 0.1, rho = 1.0, dim = 3, time = False)
     
     # Create network
     flow_net = instantiate_arch(
@@ -41,11 +42,18 @@ def run(cfg: ModulusConfig) -> None:
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
+    scale_factor = 10
     bend_angle_range = (1.323541349,1.323541349)
-    radius_pipe_range = (1,1)
-    radius_bend_range = (1,1)
-    inlet_pipe_length_range = (5,5)
-    outlet_pipe_length_range = (5,5)
+    # bend_angle_range = (pi/2,pi/2)
+    radius_pipe_range = (0.1*scale_factor,0.1*scale_factor)
+    # radius_pipe_range = (1*scale_factor,1*scale_factor)
+    # radius_bend_range = (0.1*scale_factor,0.1*scale_factor)
+    radius_bend_range = (0.2*scale_factor,0.2*scale_factor)
+    # inlet_pipe_length_range = (5,5)
+    inlet_pipe_length_range = (0.2*scale_factor,0.2*scale_factor)
+    outlet_pipe_length_range = (1*scale_factor,1*scale_factor)
+    # outlet_pipe_length_range = (5,5)
+
 
     bend_angle = bend_angle_range[0]
     radius = radius_pipe_range[0]
@@ -58,7 +66,6 @@ def run(cfg: ModulusConfig) -> None:
                     inlet_pipe_length_range=inlet_pipe_length_range,
                     outlet_pipe_length_range=outlet_pipe_length_range)
         # Make domain
-    pr = Pipe.geometry.parameterization
     Pipe_domain = Domain()
     
     # Make outlet Geometry
@@ -78,7 +85,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.inlet_pipe,
-        outvar = {"u": 0.0, "v": 1.0, "w": 0.0},
+        outvar = {"u": 0.0, "v": 0.1, "w": 0.0},
         batch_size= cfg.batch_size.Inlet,
         criteria=Eq(y,Pipe.inlet_center[1]),
     )
@@ -122,7 +129,7 @@ def run(cfg: ModulusConfig) -> None:
     flow_nodes = nodes + normal_dot_vel.make_nodes()
 
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    mass_flow_rate = -0.1 * pi*radius**2 # Unit is m^2/s
+    mass_flow_rate = 0.1 * pi*radius**2 # Unit is m^2/s
 
     for i,plane in enumerate(all_planes):
         
@@ -132,9 +139,9 @@ def run(cfg: ModulusConfig) -> None:
             outvar={"normal_dot_vel": mass_flow_rate},
             batch_size=1,
             integral_batch_size=100,
-            lambda_weighting= {"normal_dot_vel": 100},
+            lambda_weighting= {"normal_dot_vel": 1},
         )
-        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+        # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
     # Make solver
     slv = Solver(cfg, Pipe_domain)
