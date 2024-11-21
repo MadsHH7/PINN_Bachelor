@@ -33,13 +33,58 @@ from modulus.sym.domain.monitor import PointwiseMonitor
 
 from modulus.sym.utils.io import csv_to_dict
 
+from modulus.sym import quantity
+from modulus.sym.eq.non_dim import NonDimensionalizer, Scaler
+
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
+    # Physical quantities
+    nu = quantity(0.00002, "kg/(m*s)")
+    rho = quantity(500, "kg/m^3")
+    inlet_u = quantity(0.0, "m/s")
+    inlet_v = quantity(0.1, "m/s")
+    inlet_w = quantity(0.0, "m/s")
+    noslip_u = quantity(0.0, "m/s")
+    noslip_v = quantity(0.0, "m/s")
+    noslip_w = quantity(0.0, "m/s")
+    outlet_p = quantity(0.0, "pa")
+    velocity_scale = inlet_v
+    density_scale = rho
+    length_scale = quantity(1.0, "m")
+    
+    nd = NonDimensionalizer(
+        length_scale=length_scale,
+        mass_scale=density_scale * (length_scale**3),
+    )
+    
+    # Define the geometry
+    bend_angle_range=(quantity(1.323541349, "rad"), quantity(1.323541349, "rad"))
+    radius_pipe_range=(quantity(0.1, "m"), quantity(0.1, "m"))        # 0.1 m rigtige tal
+    radius_bend_range=(quantity(0.2, "m"), quantity(0.2, "m"))        # 0.2 m rigtige tal
+    inlet_pipe_length_range=(quantity(0.2, "m"), quantity(0.2, "m"))  # 0.2 m rigtige tal
+    outlet_pipe_length_range=(quantity(1.0, "m"), quantity(1.0, "m")) # 1.0 m rigtige tal   
+    
+    # Non-dimensionalization
+    bend_angle_range_nd=tuple(map(lambda x: nd.ndim(x), bend_angle_range))
+    radius_pipe_range_nd=tuple(map(lambda x: nd.ndim(x), radius_pipe_range))
+    radius_bend_range_nd=tuple(map(lambda x: nd.ndim(x), radius_bend_range))
+    inlet_pipe_length_range_nd=tuple(map(lambda x: nd.ndim(x), inlet_pipe_length_range))
+    outlet_pipe_length_range_nd=tuple(map(lambda x: nd.ndim(x), outlet_pipe_length_range))
+    
+    Pipe = PipeBend(
+        bend_angle_range=bend_angle_range_nd,
+        radius_bend_range=radius_bend_range_nd,
+        radius_pipe_range=radius_pipe_range_nd,
+        inlet_pipe_length_range=inlet_pipe_length_range_nd,
+        outlet_pipe_length_range=outlet_pipe_length_range_nd,        
+    )
+    
+    radius = radius_bend_range_nd[-1]
+    
     # Make equations
-
-    ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
+    ze = ZeroEquation(nu = nd.ndim(nu), dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
     
     # Setup things for the integral continuity condition
     normal_dot_vel = NormalDotVec()
@@ -52,7 +97,18 @@ def run(cfg: ModulusConfig) -> None:
     )
 
     # Create nodes
-    nodes = ze.make_nodes() + ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = (
+        ze.make_nodes()
+        + ns.make_nodes() 
+        # + normal_dot_vel.make_nodes() 
+        + [flow_net.make_node(name = "flow_network")]
+        + Scaler(
+            ["u", "v", "w", "p"],
+            ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
+            ["m/s", "m/s", "m/s","kg/(m*s^2)"],
+            nd
+        ).make_node()
+    )
 
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -60,31 +116,11 @@ def run(cfg: ModulusConfig) -> None:
     # Make domain
     Pipe_domain = Domain()
     
-    # Setup the geometry
-    bend_angle_range=(1.323541349, 1.323541349)
-    radius_pipe_range=(0.1, 0.1)        # 0.1 m rigtige tal
-    radius_bend_range=(0.2, 0.2)        # 0.2 m rigtige tal
-    inlet_pipe_length_range=(0.2, 0.2)  # 0.2 m rigtige tal
-    outlet_pipe_length_range=(1.0, 1.0) # 1.0 m rigtige tal    
-    
-    in_vel = 0.1
-
-    theta = bend_angle_range[1]
-    radius = radius_pipe_range[1]
-    # print(f"RADIUSSSSSSSSSS: {radius:.6f}")
-    Pipe = PipeBend(bend_angle_range, 
-                    radius_pipe_range, 
-                    radius_bend_range,
-                    inlet_pipe_length_range, 
-                    outlet_pipe_length_range,
-    )
-
-    
     # Make constraints
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe.inlet_pipe,
-        outvar = {"u": 0.0, "v": in_vel, "w": 0.0},
+        outvar = {"u": nd.ndim(inlet_u), "v": nd.ndim(inlet_v), "w": nd.ndim(inlet_w)},
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2,
     )
@@ -95,7 +131,7 @@ def run(cfg: ModulusConfig) -> None:
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe.outlet_pipe,
-        outvar = {"p": 0.0},
+        outvar = {"p": nd.ndim(outlet_p)},
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 <= radius**2,
     )
@@ -106,7 +142,7 @@ def run(cfg: ModulusConfig) -> None:
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe.geometry,
-        outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
+        outvar = {"u": nd.ndim(noslip_u), "v": nd.ndim(noslip_v), "w": nd.ndim(noslip_w)},
         batch_size = cfg.batch_size.NoSlip,
         criteria = And(
             ((x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 > radius**2),
@@ -143,21 +179,21 @@ def run(cfg: ModulusConfig) -> None:
     #     )
     #     Pipe_domain.add_constraint(integral, f"Integral{i}")
     
-    # # Lastly add inferencer
-    # n_pts = int(5e4)
-    # inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
+    # Lastly add inferencer
+    n_pts = int(5e4)
+    inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
     
-    # xs = inference_pts["x"]
-    # ys = inference_pts["y"]
-    # zs = inference_pts["z"]
+    xs = inference_pts["x"]
+    ys = inference_pts["y"]
+    zs = inference_pts["z"]
     
-    # inf = PointwiseInferencer(
-    #     nodes = nodes,
-    #     invar = {"x": xs, "y": ys, "z": zs},
-    #     output_names = {"u", "v", "w", "p"},
-    #     batch_size = n_pts
-    # )
-    # Pipe_domain.add_inferencer(inf, "vtk_inf")
+    inf = PointwiseInferencer(
+        nodes = nodes,
+        invar = {"x": xs, "y": ys, "z": zs},
+        output_names = {"u", "v", "w", "p"},
+        batch_size = n_pts
+    )
+    Pipe_domain.add_inferencer(inf, "vtk_inf")
 
 
     # Make solver
