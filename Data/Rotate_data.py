@@ -42,4 +42,10 @@ df = translate(df, keys_pts, translation)
 
 df = df.sample(frac = pct_data, random_state=42)
 
+noise_pct = 10
+
+sigma = (noise_pct / 100) * df[keys_vel]
+noise = np.random.normal(0, sigma, df[keys_vel].shape)
+df[keys_vel] = df[keys_vel] + noise
+
 df.to_csv(f'U0pt{key}_Laminar_rot.csv', index=False)

@@ -37,16 +37,9 @@ from modulus.sym.utils.io import csv_to_dict
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equations
-    nu = Symbol("nu")
 
-    ze = ZeroEquation(nu = nu, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
     ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
-    # ze = ZeroEquation(nu = 0.01, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    # ns = NavierStokes(nu = ze.equations["nu"], rho = 1.0, dim = 3, time = False)
-    # ns = NavierStokes(nu = 0.00002, rho = 500, dim = 3, time = False)
-
-    # Setup things for the integral continuity condition
-    normal_dot_vel = NormalDotVec()
 
     # Create network
     flow_net = instantiate_arch(
@@ -54,18 +47,10 @@ def run(cfg: ModulusConfig) -> None:
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
-    invert_net = instantiate_arch(
-        input_keys = [Key("x"), Key("y"), Key("z")],
-        output_keys = [Key("nu")],
-        cfg = cfg.arch.fully_connected,
-    )
 
     # Create nodes
-    nodes = ze.make_nodes() + ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + [invert_net.make_node(name = "invert_net")]
+    nodes = ze.make_nodes() + ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
 
-    # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")]
-    # nodes = ze.make_nodes() + ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
-    
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
     
@@ -99,7 +84,6 @@ def run(cfg: ModulusConfig) -> None:
         outvar = {"u": 0.0, "v": in_vel, "w": 0.0},
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2,
-        lambda_weighting={"u": 1000.0, "v": 1000.0, "w": 1000.0},
     )
     Pipe_domain.add_constraint(Inlet, "Inlet")
     
@@ -111,7 +95,6 @@ def run(cfg: ModulusConfig) -> None:
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
         criteria = (x - Pipe.outlet_center[0])**2 + (y - Pipe.outlet_center[1])**2 + z**2 <= radius**2,
-        # lambda_weighting = {"p": 10.0},
     )
     Pipe_domain.add_constraint(Outlet, "Outlet")
 
@@ -135,33 +118,14 @@ def run(cfg: ModulusConfig) -> None:
         geometry = Pipe.geometry,
         outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
         batch_size = cfg.batch_size.Interior,
-        # lambda_weighting = {
-        #     "continuity": Symbol("sdf"),
-        #     "momentum_x": Symbol("sdf"),
-        #     "momentum_y": Symbol("sdf"),
-        #     "momentum_z": Symbol("sdf"),
-        # }
         lambda_weighting = {
-            "continuity": 1000.0,#Symbol("sdf"),
-            "momentum_x": 1.0,#Symbol("sdf"),
-            "momentum_y": 1.0,#Symbol("sdf"),
-            "momentum_z": 1.0,#Symbol("sdf"),
+            "continuity": Symbol("sdf"),
+            "momentum_x": Symbol("sdf"),
+            "momentum_y": Symbol("sdf"),
+            "momentum_z": Symbol("sdf"),
         }
     )
     Pipe_domain.add_constraint(Interior, "Interior")
-    
-    # Integral constraint
-    # Volumetric_flow = pi * radius**2 * in_vel
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    # for i, plane in enumerate(all_planes):
-    #     integral = IntegralBoundaryConstraint(
-    #         nodes = nodes,
-    #         geometry = plane,
-    #         outvar = {"normal_dot_vel": Volumetric_flow},
-    #         batch_size = 1,
-    #         integral_batch_size = 100,
-    #     )
-    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
     # data_path = f"/home/madshh7/PINN_Bachelor/Data"
@@ -206,34 +170,6 @@ def run(cfg: ModulusConfig) -> None:
         batch_size = n_pts
     )
     Pipe_domain.add_inferencer(inf, "vtk_inf")
-    
-    # Create dict for monitor
-    mapping = {
-        "Velocity[i] (m/s)": "u",
-        "Velocity[j] (m/s)": "v",
-        "Velocity[k] (m/s)": "w",
-        "X (m)": "x",
-        "Y (m)": "y",
-        "Z (m)": "z",
-    }
-
-    csv_var = csv_to_dict(
-        to_absolute_path("/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/U0pt1_Laminar_rot.csv"), mapping
-    )
-
-    csv_var_numpy = {
-        key: value for key, value in csv_var.items() if key in ["x", "y", "z"]
-    }
-
-    # Add monitor to keep track of the estimated nu
-    monitor = PointwiseMonitor(
-        csv_var_numpy,
-        output_names=["nu"],
-        metrics={"mean_nu": lambda var: torch.mean(var["nu"])},
-        nodes=nodes,
-    )
-    Pipe_domain.add_monitor(monitor)
-
 
     # Make solver
     slv = Solver(cfg, Pipe_domain)
