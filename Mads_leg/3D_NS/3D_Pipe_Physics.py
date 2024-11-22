@@ -38,10 +38,8 @@ from modulus.sym.utils.io import csv_to_dict
 def run(cfg: ModulusConfig) -> None:
     # Make equations
 
-    # ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    # ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
-    ze = ZeroEquation(nu = 0.02, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    ns = NavierStokes(nu = ze.equations["nu"], rho = 1, dim = 3, time = False)
+    ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
     
     # Setup things for the integral continuity condition
     normal_dot_vel = NormalDotVec()

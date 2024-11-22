@@ -24,15 +24,21 @@ defaults :
   - _self_
 scheduler:
   decay_rate: 0.95
-  decay_steps: 4000
+  decay_steps: 10000
+
+arch:
+  branch:
+    nr_layers: 3
+    layer_size: 128
+    activation_fn: "silu"
 
 training:
   rec_results_freq: 100
   rec_validation_freq: 100
-  rec_inference_freq: 1000 #2000
+  rec_inference_freq: 1000
   rec_monitor_freq: 1000
   rec_constraint_freq: 500
-  max_steps : 20000
+  max_steps : 900000
 
 batch_size:
   NoSlip: 400
