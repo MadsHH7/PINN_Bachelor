@@ -29,9 +29,10 @@ from pipe_bend_parameterized_geometry import *
 import numpy as np
 
 from modulus.sym.domain.inferencer import PointwiseInferencer
+from modulus.sym.domain.validator import PointwiseValidator
 from modulus.sym.domain.monitor import PointwiseMonitor
 
-from modulus.sym.utils.io import csv_to_dict
+from modulus.sym.utils.io import csv_to_dict, ValidatorPlotter
 
 
 @modulus.sym.main(config_path="conf", config_name="config")
@@ -132,7 +133,7 @@ def run(cfg: ModulusConfig) -> None:
     key = "pt1"
 
     input, output, nr_points = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Laminar_rot.csv"),
+        df_path= os.path.join(data_path, f"U0{key}_Laminar_train.csv"),
         desired_input_keys=["x", "y", "z"],
         original_input_keys=["X (m)", "Y (m)", "Z (m)"],
         desired_output_keys=["u", "v", "w", "p"],
@@ -154,6 +155,27 @@ def run(cfg: ModulusConfig) -> None:
         }
     )
     Pipe_domain.add_constraint(flow, "flow_data")
+    
+    ## Add validator
+    # Find the validation data
+    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")
+    mapping = {"Velocity[i] (m/s)": "u", "Velocity[j] (m/s)": "v", "Velocity[k] (m/s)": "w", "X (m)": "x", "Y (m)": "y", "Z (m)": "z"}
+    val_var = csv_to_dict(to_absolute_path(val_df), mapping)
+    
+    val_invar_numpy = {
+        key: value for key, value in val_var.items() if key in ["x", "y", "z"]
+    }
+    val_outvar_numpy = {
+        key: value for key, value in val_var.items() if key in ["u", "v", "w"]
+    }
+    
+    validator = PointwiseValidator(
+        nodes=nodes,
+        invar=val_invar_numpy,
+        true_outvar=val_outvar_numpy,
+        batch_size=1024,
+    )
+    Pipe_domain.add_validator(validator)
     
     # Lastly add inferencer
     n_pts = int(5e4)

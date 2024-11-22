@@ -51,7 +51,8 @@ def run(cfg: ModulusConfig) -> None:
     outlet_p = quantity(0.0, "pa")
     velocity_scale = inlet_v
     density_scale = rho
-    length_scale = quantity(0.2, "m")
+    # length_scale = quantity(0.2, "m") # Diameter of pipe
+    length_scale = quantity(1.0, "m")
     
     nd = NonDimensionalizer(
         length_scale=length_scale,
@@ -107,7 +108,7 @@ def run(cfg: ModulusConfig) -> None:
         + Scaler(
             ["u", "v", "w", "p"],
             ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
-            ["m/s", "m/s", "m/s","pa"],
+            ["m/s", "m/s", "m/s", "m^2/s^2"],
             nd
         ).make_node()
     )
@@ -195,8 +196,15 @@ def run(cfg: ModulusConfig) -> None:
         output_names = {"u_scaled", "v_scaled", "w_scaled", "p_scaled"},
         batch_size = n_pts
     )
-    Pipe_domain.add_inferencer(inf, "vtk_inf")
+    Pipe_domain.add_inferencer(inf, "vtk_inf_scaled")
 
+    inf2 = PointwiseInferencer(
+        nodes = nodes,
+        invar = {"x": xs, "y": ys, "z": zs},
+        output_names = {"u", "v", "w", "p"},
+        batch_size = n_pts,
+    )
+    Pipe_domain.add_inferencer(inf2, "vtk_inf")
 
     # Make solver
     slv = Solver(cfg, Pipe_domain)
