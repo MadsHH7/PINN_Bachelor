@@ -1,17 +1,16 @@
 from sympy import Eq, And, Symbol, sqrt
 
-import modulus.sym
-
 from modulus.sym.geometry.primitives_3d import Cone, Plane
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pdes.turbulence_zero_eq import ZeroEquation
 from modulus.sym.eq.pdes.basic import NormalDotVec
-from modulus.sym.domain.inferencer import PointwiseInferencer, PointVTKInferencer
+from modulus.sym.domain.inferencer import PointwiseInferencer
+from modulus.sym.domain.validator import PointwiseValidator
 
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
 
-from modulus.sym.hydra import instantiate_arch, ModulusConfig
+from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
 
 from modulus.sym.domain.constraint import (
     PointwiseBoundaryConstraint,
@@ -39,8 +38,6 @@ from modulus.sym.eq.non_dim import NonDimensionalizer, Scaler
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
 
-
-    inlet_vel_initial = quantity(0.1, "m/s")
     bend_angle_range_intial = (1.323541349,1.323541349)
     radius_pipe_range_inital = (quantity(0.1,"m"), quantity(0.1,"m"))
     radius_bend_range_inital = (quantity(0.2,"m"),quantity(0.2,"m"))
@@ -49,21 +46,32 @@ def run(cfg: ModulusConfig) -> None:
 
 
 
-    length_scale = quantity(1, "m")
-    velocity_scale = inlet_vel_initial
-    nu = quantity(0.00002, "kg/(m*s)")
-    rho = quantity(500, "kg/m^3")
+
+   
 
     inlet_u = quantity(0,"m/s")
     inlet_v = quantity(0.1, "m/s")
     inlet_w = quantity(0,"m/s")
+
+    noslip_u = quantity(0,"m/s")
+    noslip_v = quantity(0,"m/s")
+    noslip_w = quantity(0,"m/s")
+
+    outlet_p = quantity(0,"pa")
+     
+    velocity_scale = inlet_v
+
+    nu = quantity(0.00002, "m^2/s")
+    rho = quantity(500, "kg/m^3")
+    length_scale = quantity(1, "m")
     density_scale = rho
 
 
     nd = NonDimensionalizer(
     length_scale=length_scale,
     mass_scale=density_scale * (length_scale**3),
-    # time_scale= length_scale/velocity_scale,
+    time_scale= length_scale/velocity_scale,
+
     )
 
     # Scaled geometry
@@ -74,7 +82,15 @@ def run(cfg: ModulusConfig) -> None:
     inlet_pipe_length_nd = tuple(map(lambda x: nd.ndim(x), inlet_pipe_length_range_initial))
     outlet_pipe_length_nd = tuple(map(lambda x: nd.ndim(x), outlet_pipe_length_range_intial))
 
-  
+    inlet_u_nd = nd.ndim(inlet_u)
+    inlet_v_nd = nd.ndim(inlet_v)
+    inlet_w_nd = nd.ndim(inlet_w)
+
+    noslip_u_nd = nd.ndim(noslip_u)
+    noslip_v_nd = nd.ndim(noslip_v)
+    noslip_w_nd = nd.ndim(noslip_w)
+    
+    outlet_p_nd = nd.ndim(outlet_p)
 
 
     # Make equation
@@ -104,7 +120,7 @@ def run(cfg: ModulusConfig) -> None:
     + [flow_net.make_node(name = "flow_network")]
     + Scaler(["u","v","w","p"],
              ["u_scaled","v_scaled","w_scaled","p_scaled"],
-             ["m/s","m/s","m/s","kg/(m*s^2)"],
+             ["m/s","m/s","m/s","Pa*m/(nu*m/s)"],
              nd).make_node()
     )
     
@@ -134,7 +150,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.inlet_pipe,
-        outvar = {"u": 0.0, "v": inlet_vel_nd, "w": 0.0},
+        outvar = {"u": inlet_u_nd, "v": inlet_v_nd, "w":inlet_w_nd},
         batch_size= cfg.batch_size.Inlet,
         # criteria=Eq(y,Pipe.inlet_center[1]),
         criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
@@ -145,7 +161,7 @@ def run(cfg: ModulusConfig) -> None:
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.outlet_pipe,
-        outvar = {"p": 0.0,},
+        outvar = {"p": outlet_p_nd,},
         batch_size= cfg.batch_size.Inlet,
         criteria= ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 <= radius**2),
     )
@@ -156,7 +172,7 @@ def run(cfg: ModulusConfig) -> None:
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.geometry,
-        outvar = {"u": 0.0, "v": 0.0, "w": 0.0},
+        outvar = {"u": noslip_u_nd, "v": noslip_v_nd, "w": noslip_w_nd},
         batch_size = cfg.batch_size.Walls,
         criteria=And(
             ((x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2),
@@ -196,7 +212,7 @@ def run(cfg: ModulusConfig) -> None:
             geometry=plane,
             outvar={"normal_dot_vel": mass_flow_rate},
             batch_size=1,
-            integral_batch_size=100,
+            integral_batch_size=500,
             lambda_weighting= {"normal_dot_vel": 1},
         )
         # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
@@ -237,10 +253,29 @@ def run(cfg: ModulusConfig) -> None:
     # )
     # Pipe_domain.add_constraint(flow, "flow_data")
 
+    file_path = "openfoam/cavity_uniformVel0.csv"
+    mapping = {"Points:0": "x", "Points:1": "y","Points:2": "z", "U:0": "u", "U:1": "v","U:2": "w", "p": "p"}
+
+    Validation_data = csv_to_dict(to_absolute_path(file_path), mapping)
+
+    openfoam_invar_numpy = {
+            key: value for key, value in Validation_data.items() if key in ["x", "y"]
+        }
+    openfoam_outvar_numpy = {
+            key: value for key, value in Validation_data.items() if key in ["u", "v"]
+        }
+
+    openfoam_validator = PointwiseValidator(
+        nodes=nodes,
+        invar=u,
+        true_outvar=openfoam_outvar_numpy,
+        batch_size=1024,
+        plotter=ValidatorPlotter(),
+    )
+    Pipe_domain.add_validator(openfoam_validator)
 
 
-
-    nr_points=int(1e4)
+    nr_points=int(1e5)
     
     
     inference_pts = Pipe.geometry.sample_interior(nr_points=nr_points)
@@ -252,7 +287,7 @@ def run(cfg: ModulusConfig) -> None:
     inference = PointwiseInferencer(
             nodes=nodes,
             invar={"x": xs, "y": ys, "z": zs},
-            output_names=["u", "v","w", "p"],
+            output_names=["u_scaled", "v_scaled","w_scaled", "p_scaled"],
             batch_size=nr_points,
         )
     Pipe_domain.add_inferencer(inference, "Inference")
