@@ -174,6 +174,7 @@ def run(cfg: ModulusConfig) -> None:
         invar=val_invar_numpy,
         true_outvar=val_outvar_numpy,
         batch_size=1024,
+        plotter=None    
     )
     Pipe_domain.add_validator(validator)
     

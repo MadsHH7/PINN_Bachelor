@@ -57,7 +57,7 @@ def run(cfg: ModulusConfig) -> None:
     nd = NonDimensionalizer(
         length_scale=length_scale,
         mass_scale=density_scale * (length_scale**3),
-        time_scale=length_scale / velocity_scale
+        # time_scale=length_scale / velocity_scale
     )
     
     # Define the geometry
@@ -90,7 +90,7 @@ def run(cfg: ModulusConfig) -> None:
     ns = NavierStokes(nu=nd.ndim(nu), rho=nd.ndim(rho), dim=3, time=False)
     
     # Setup things for the integral continuity condition
-    # normal_dot_vel = NormalDotVec()
+    normal_dot_vel = NormalDotVec()
 
     # Create network
     flow_net = instantiate_arch(
@@ -103,7 +103,7 @@ def run(cfg: ModulusConfig) -> None:
     nodes = (
         ns.make_nodes() 
         # + ze.make_nodes()
-        # + normal_dot_vel.make_nodes() 
+        + normal_dot_vel.make_nodes() 
         + [flow_net.make_node(name = "flow_network")]
         + Scaler(
             ["u", "v", "w", "p"],
@@ -170,17 +170,17 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    # Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    # for i, plane in enumerate(all_planes):
-    #     integral = IntegralBoundaryConstraint(
-    #         nodes = nodes,
-    #         geometry = plane,
-    #         outvar = {"normal_dot_vel": Volumetric_flow},
-    #         batch_size = 1,
-    #         integral_batch_size = 100,
-    #     )
-    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
+    Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
+    all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
+    for i, plane in enumerate(all_planes):
+        integral = IntegralBoundaryConstraint(
+            nodes = nodes,
+            geometry = plane,
+            outvar = {"normal_dot_vel": Volumetric_flow},
+            batch_size = 1,
+            integral_batch_size = 100,
+        )
+        Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     # Lastly add inferencer
     n_pts = int(5e4)
