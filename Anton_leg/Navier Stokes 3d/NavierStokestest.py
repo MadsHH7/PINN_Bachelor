@@ -217,41 +217,41 @@ def run(cfg: ModulusConfig) -> None:
         )
         # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-    # data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
-    # key = "pt1"
-    # angle = (pi / 2) + bend_angle
-    # rot_matrix = (
-    #     [float(cos(angle)), float(-sin(angle)), 0],
-    #     [float(sin(angle)), float(cos(angle)), 0],
-    #     [0, 0, 1]
-    # )
+    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
+    key = "pt1"
+    angle = (pi / 2) + bend_angle
+    rot_matrix = (
+        [float(cos(angle)), float(-sin(angle)), 0],
+        [float(sin(angle)), float(cos(angle)), 0],
+        [0, 0, 1]
+    )
 
-    # translate= ([
-    #     0,
-    #     inlet_pipe_length_range[-1],
-    #     0
-    # ])
+    translate= ([
+        0,
+        inlet_pipe_length_range[-1],
+        0
+    ])
 
 
-    # input, output, nr_points = get_data(
-    #     df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
-    #     desired_input_keys=["x", "y", "z"],
-    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-    #     desired_output_keys=["u", "v", "w", "p"],
-    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-    #     rotation_matrix= rot_matrix,
-    #     translation=translate
-    # )
+    input, output, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar.csv"),
+        desired_input_keys=["x", "y", "z"],
+        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+        desired_output_keys=["u", "v", "w", "p"],
+        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+        rotation_matrix= rot_matrix,
+        translation=translate
+    )
     
-    # # flow_data = np.full((nr_points, 1))
+    # flow_data = np.full((nr_points, 1))
     
-    # flow = PointwiseConstraint.from_numpy(
-    #     nodes = nodes,
-    #     invar = input,
-    #     outvar = output,
-    #     batch_size = nr_points,
-    # )
-    # Pipe_domain.add_constraint(flow, "flow_data")
+    flow = PointwiseConstraint.from_numpy(
+        nodes = nodes,
+        invar = input,
+        outvar = output,
+        batch_size = nr_points,
+    )
+    Pipe_domain.add_constraint(flow, "flow_data")
 
     file_path = "openfoam/cavity_uniformVel0.csv"
     mapping = {"Points:0": "x", "Points:1": "y","Points:2": "z", "U:0": "u", "U:1": "v","U:2": "w", "p": "p"}
