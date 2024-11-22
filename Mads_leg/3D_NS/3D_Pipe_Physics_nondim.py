@@ -48,16 +48,15 @@ def run(cfg: ModulusConfig) -> None:
     noslip_u = quantity(0.0, "m/s")
     noslip_v = quantity(0.0, "m/s")
     noslip_w = quantity(0.0, "m/s")
-    outlet_p = quantity(0.0, "pa")
+    outlet_p = quantity(0.0, "Pa")
     velocity_scale = inlet_v
     density_scale = rho
-    # length_scale = quantity(0.2, "m") # Diameter of pipe
-    length_scale = quantity(1.0, "m")
+    length_scale = quantity(0.2, "m") # Diameter of pipe
     
     nd = NonDimensionalizer(
         length_scale=length_scale,
         mass_scale=density_scale * (length_scale**3),
-        # time_scale=length_scale / velocity_scale
+        time_scale=length_scale / velocity_scale
     )
     
     # Define the geometry
@@ -108,7 +107,9 @@ def run(cfg: ModulusConfig) -> None:
         + Scaler(
             ["u", "v", "w", "p"],
             ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
-            ["m/s", "m/s", "m/s", "m^2/s^2"],
+            # ["m/s", "m/s", "m/s", "m^2/s^2"],
+            ["m/s", "m/s", "m/s", "kg/(m·s^2)"],
+            # ["m/s", "m/s", "m/s", "Pa"],
             nd
         ).make_node()
     )
