@@ -81,7 +81,7 @@ def run(cfg: ModulusConfig) -> None:
         outlet_pipe_length_range=outlet_pipe_length_range_nd,        
     )
     
-    radius = radius_bend_range_nd[-1]
+    radius = radius_pipe_range_nd[-1]
     
     # Make equations
     # ze = ZeroEquation(nu = nd.ndim(nu), dim = 3, time = False, max_distance = Max(Symbol("sdf")))
