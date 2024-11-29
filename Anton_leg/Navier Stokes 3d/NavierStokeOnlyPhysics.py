@@ -182,11 +182,11 @@ def run(cfg: ModulusConfig) -> None:
 
     Pipe_domain.add_constraint(Walls,"Walls")
     
-    Interior = PointwiseInteriorConstraint(
+    Interior_Inlet = PointwiseInteriorConstraint(
         nodes = nodes,
         geometry= Pipe.geometry,
         outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
-        batch_size= cfg.batch_size.Interior,
+        batch_size= cfg.batch_size.Interior_Inlet,
         lambda_weighting = {
             "continuity": Symbol("sdf"),
             "momentum_x": Symbol("sdf"),
@@ -195,7 +195,37 @@ def run(cfg: ModulusConfig) -> None:
         } 
     )
 
-    Pipe_domain.add_constraint(Interior,"Interior")
+    Pipe_domain.add_constraint(Interior_Inlet,"Interior_Inlet")
+
+    Interior_Bend = PointwiseInteriorConstraint(
+        nodes = nodes,
+        geometry= Pipe.geometry,
+        outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
+        batch_size= cfg.batch_size.Interior_Bend,
+        lambda_weighting = {
+            "continuity": Symbol("sdf"),
+            "momentum_x": Symbol("sdf"),
+            "momentum_y": Symbol("sdf"),
+            "momentum_z": Symbol("sdf"),
+        } 
+    )
+
+    Pipe_domain.add_constraint(Interior_Bend,"Interior_Bend")
+
+    Interior_Outlet = PointwiseInteriorConstraint(
+        nodes = nodes,
+        geometry= Pipe.geometry,
+        outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
+        batch_size= cfg.batch_size.Interior_Outlet,
+        lambda_weighting = {
+            "continuity": Symbol("sdf"),
+            "momentum_x": Symbol("sdf"),
+            "momentum_y": Symbol("sdf"),
+            "momentum_z": Symbol("sdf"),
+        } 
+    )
+
+    Pipe_domain.add_constraint(Interior_Outlet,"Interior_Outlet")
 
     ## Attempt 2 at integral conditions
     # Integral constraints bruges mest hvis vi ikke har data.
@@ -215,7 +245,7 @@ def run(cfg: ModulusConfig) -> None:
             integral_batch_size=500,
             lambda_weighting= {"normal_dot_vel": 1},
         )
-        # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
@@ -242,7 +272,7 @@ def run(cfg: ModulusConfig) -> None:
             "p": flow_data,
         }
     )
-    Pipe_domain.add_constraint(flow, "flow_data")
+    # Pipe_domain.add_constraint(flow, "flow_data")
 
 
     val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")

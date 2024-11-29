@@ -26,12 +26,19 @@ scheduler:
   decay_rate: 0.95
   decay_steps: 4000
 
+arch:
+  branch:
+    nr_layers: 3
+    layer_size: 128
+    activation_fn: "silu"
+
+
 training:
-  rec_validation_freq: 1000
+  rec_validation_freq: 5000
   rec_inference_freq: 5000
   rec_monitor_freq: 1000
   rec_constraint_freq: 2000
-  max_steps : 50000
+  max_steps : 5000000
 
 batch_size:
   Inlet: 100
@@ -39,7 +46,11 @@ batch_size:
   # PipeBend: 
   Walls: 500
   Interior: 1000
+  Interior_Inlet: 200
+  Interior_Outlet: 200
+  Interior_Bend: 600
   IntegralContinuity: 50
+  BendInterior: 500
 
 graph:
   func_arch: true
