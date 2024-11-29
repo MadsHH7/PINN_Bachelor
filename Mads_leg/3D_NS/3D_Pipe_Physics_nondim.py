@@ -48,11 +48,10 @@ def run(cfg: ModulusConfig) -> None:
     noslip_u = quantity(0.0, "m/s")
     noslip_v = quantity(0.0, "m/s")
     noslip_w = quantity(0.0, "m/s")
-    outlet_p = quantity(0.0, "pa")
+    outlet_p = quantity(0.0, "Pa")
     velocity_scale = inlet_v
     density_scale = rho
-    # length_scale = quantity(0.2, "m") # Diameter of pipe
-    length_scale = quantity(1.0, "m")
+    length_scale = quantity(0.2, "m") # Diameter of pipe
     
     nd = NonDimensionalizer(
         length_scale=length_scale,
@@ -82,7 +81,7 @@ def run(cfg: ModulusConfig) -> None:
         outlet_pipe_length_range=outlet_pipe_length_range_nd,        
     )
     
-    radius = radius_bend_range_nd[-1]
+    radius = radius_pipe_range_nd[-1]
     
     # Make equations
     # ze = ZeroEquation(nu = nd.ndim(nu), dim = 3, time = False, max_distance = Max(Symbol("sdf")))
@@ -90,7 +89,7 @@ def run(cfg: ModulusConfig) -> None:
     ns = NavierStokes(nu=nd.ndim(nu), rho=nd.ndim(rho), dim=3, time=False)
     
     # Setup things for the integral continuity condition
-    # normal_dot_vel = NormalDotVec()
+    normal_dot_vel = NormalDotVec()
 
     # Create network
     flow_net = instantiate_arch(
@@ -103,12 +102,14 @@ def run(cfg: ModulusConfig) -> None:
     nodes = (
         ns.make_nodes() 
         # + ze.make_nodes()
-        # + normal_dot_vel.make_nodes() 
+        + normal_dot_vel.make_nodes() 
         + [flow_net.make_node(name = "flow_network")]
         + Scaler(
             ["u", "v", "w", "p"],
             ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
-            ["m/s", "m/s", "m/s", "m^2/s^2"],
+            # ["m/s", "m/s", "m/s", "m^2/s^2"],
+            ["m/s", "m/s", "m/s", "kg/(m·s^2)"],
+            # ["m/s", "m/s", "m/s", "Pa"],
             nd
         ).make_node()
     )
@@ -170,17 +171,17 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    # Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    # for i, plane in enumerate(all_planes):
-    #     integral = IntegralBoundaryConstraint(
-    #         nodes = nodes,
-    #         geometry = plane,
-    #         outvar = {"normal_dot_vel": Volumetric_flow},
-    #         batch_size = 1,
-    #         integral_batch_size = 100,
-    #     )
-    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
+    Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
+    all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
+    for i, plane in enumerate(all_planes):
+        integral = IntegralBoundaryConstraint(
+            nodes = nodes,
+            geometry = plane,
+            outvar = {"normal_dot_vel": Volumetric_flow},
+            batch_size = 1,
+            integral_batch_size = 100,
+        )
+        Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     # Lastly add inferencer
     n_pts = int(5e4)

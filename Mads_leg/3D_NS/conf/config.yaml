@@ -41,9 +41,9 @@ training:
   max_steps : 900000
 
 batch_size:
-  NoSlip: 400
-  Interior: 400
-  Inlet: 100
+  NoSlip: 1500
+  Interior: 1500
+  Inlet: 400
 
 graph:
   func_arch: true

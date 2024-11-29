@@ -38,9 +38,10 @@ from modulus.sym.utils.io import csv_to_dict
 def run(cfg: ModulusConfig) -> None:
     # Make equations
 
-    ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
-    ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
-    
+    # ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
+    # ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
+    ns = NavierStokes(nu=0.00002, rho=1, dim=3, time=False)
+
     # Setup things for the integral continuity condition
     normal_dot_vel = NormalDotVec()
 
@@ -52,7 +53,7 @@ def run(cfg: ModulusConfig) -> None:
     )
 
     # Create nodes
-    nodes = ze.make_nodes() + ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
+    nodes = ns.make_nodes() + normal_dot_vel.make_nodes() + [flow_net.make_node(name = "flow_network")]
 
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -69,9 +70,8 @@ def run(cfg: ModulusConfig) -> None:
     
     in_vel = 0.1
 
-    theta = bend_angle_range[1]
     radius = radius_pipe_range[1]
-    # print(f"RADIUSSSSSSSSSS: {radius:.6f}")
+
     Pipe = PipeBend(bend_angle_range, 
                     radius_pipe_range, 
                     radius_bend_range,
@@ -131,33 +131,40 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Interior, "Interior")
     
     # Integral constraint
-    # Volumetric_flow = pi * radius**2 * in_vel
-    # all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    # for i, plane in enumerate(all_planes):
-    #     integral = IntegralBoundaryConstraint(
-    #         nodes = nodes,
-    #         geometry = plane,
-    #         outvar = {"normal_dot_vel": Volumetric_flow},
-    #         batch_size = 1,
-    #         integral_batch_size = 100,
-    #     )
-    #     Pipe_domain.add_constraint(integral, f"Integral{i}")
+    Volumetric_flow = pi * radius**2 * in_vel
+    all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
+    for i, plane in enumerate(all_planes):
+        integral = IntegralBoundaryConstraint(
+            nodes = nodes,
+            geometry = plane,
+            outvar = {"normal_dot_vel": Volumetric_flow},
+            batch_size = 1,
+            integral_batch_size = 250,
+        )
+        Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     # # Lastly add inferencer
-    # n_pts = int(5e4)
-    # inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
     
-    # xs = inference_pts["x"]
-    # ys = inference_pts["y"]
-    # zs = inference_pts["z"]
+    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    key = "pt1"
     
-    # inf = PointwiseInferencer(
-    #     nodes = nodes,
-    #     invar = {"x": xs, "y": ys, "z": zs},
-    #     output_names = {"u", "v", "w", "p"},
-    #     batch_size = n_pts
-    # )
-    # Pipe_domain.add_inferencer(inf, "vtk_inf")
+    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")
+    mapping = {"Velocity[i] (m/s)": "u", "Velocity[j] (m/s)": "v", "Velocity[k] (m/s)": "w", "X (m)": "x", "Y (m)": "y", "Z (m)": "z"}
+    val_var = csv_to_dict(to_absolute_path(val_df), mapping)
+    
+    val_invar_numpy = {
+        key: value for key, value in val_var.items() if key in ["x", "y", "z"]
+    }
+    
+
+    inf = PointwiseInferencer(
+        nodes = nodes,
+        invar = val_invar_numpy,
+        output_names = {"u", "v", "w", "p"},
+        batch_size = 1024,
+    )
+    Pipe_domain.add_inferencer(inf, "vtk_inf")
 
 
     # Make solver
