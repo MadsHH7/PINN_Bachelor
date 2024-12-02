@@ -222,7 +222,7 @@ def run(cfg: ModulusConfig) -> None:
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
 
-    input_bend_inlet, output_bend_inlet, nr_points = get_data(
+    input_bend_inlet, output_bend_inlet, nr_points_inlet = get_data(
         df_path= os.path.join(data_path, f"U0{key}_Bend_Inlet.csv"),
         desired_input_keys=["x", "y", "z"],
         original_input_keys=["X (m)", "Y (m)", "Z (m)"],
@@ -230,7 +230,7 @@ def run(cfg: ModulusConfig) -> None:
         original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
     )
 
-    input_bend_outlet, output_bend_outlet, nr_points = get_data(
+    input_bend_outlet, output_bend_outlet, nr_points_outlet = get_data(
         df_path= os.path.join(data_path, f"U0{key}_Bend_Outlet.csv"),
         desired_input_keys=["x", "y", "z"],
         original_input_keys=["X (m)", "Y (m)", "Z (m)"],
@@ -240,18 +240,13 @@ def run(cfg: ModulusConfig) -> None:
     
     
     
-    data_points = 50
-    flow_data = np.full((data_points, 1), fill_value=100.0)
+    data_points = 500
+    flow_data_inlet = np.full((nr_points_inlet, 1), fill_value=100.0)
+    flow_data_outlet =  np.full((nr_points_outlet, 1), fill_value=100.0)
     bend_inlet = Pipe.bend_planes_centers[0]
     bend_outlet = Pipe.bend_planes_centers[-1]
-    print(bend_inlet)
-    print(bend_outlet)
 
     ## We want a function the chooses the correct data, for the inlet and outlet of the 
-
-
-
-
 
 
     flow_bend_inlet = PointwiseConstraint.from_numpy(
@@ -260,10 +255,10 @@ def run(cfg: ModulusConfig) -> None:
         outvar = output_bend_inlet,
         batch_size = data_points,
         lambda_weighting={
-            "u": flow_data,
-            "v": flow_data,
-            "w": flow_data,
-            "p": flow_data,
+            "u": flow_data_inlet,
+            "v": flow_data_inlet,
+            "w": flow_data_inlet,
+            "p": flow_data_inlet,
         },
     )
     
@@ -275,17 +270,17 @@ def run(cfg: ModulusConfig) -> None:
         outvar = output_bend_outlet,
         batch_size = data_points,
         lambda_weighting={
-            "u": flow_data,
-            "v": flow_data,
-            "w": flow_data,
-            "p": flow_data,
+            "u": flow_data_outlet,
+            "v": flow_data_outlet,
+            "w": flow_data_outlet,
+            "p": flow_data_outlet,
         },
     )
     
     Pipe_domain.add_constraint(flow_bend_outlet, "flow_bend_outlet")
 
 
-    val_df = os.path.join(data_path, f"U0{key}_Laminar.csv")
+    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation_BEND.csv")
     mapping = {"Velocity[i] (m/s)": "u", "Velocity[j] (m/s)": "v", "Velocity[k] (m/s)": "w", "X (m)": "x", "Y (m)": "y", "Z (m)": "z"}
     val_var = csv_to_dict(to_absolute_path(val_df), mapping)
 
