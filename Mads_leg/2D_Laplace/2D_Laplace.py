@@ -139,12 +139,11 @@ def run(cfg: ModulusConfig) -> None:
     Rect_domain.add_constraint(interior, "interior")
     
     # Add validator
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Mads_leg/2D_Laplace/"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
     # data_path = f"/home/madshh7/PINN_Bachelor/Data"
-    
     ## Add validator
     # Find the validation data
-    val_df = os.path.join(data_path, "LaplaceRect2d.csv")
+    val_df = os.path.join(data_path, "LaplaceRect2D.csv")
     mapping = {"u": "u", "v": "v", "x": "x", "y": "y"}
     val_var = csv_to_dict(to_absolute_path(val_df), mapping)
     
@@ -159,7 +158,7 @@ def run(cfg: ModulusConfig) -> None:
         nodes=nodes,
         invar=val_invar_numpy,
         true_outvar=val_outvar_numpy,
-        batch_size=400,
+        batch_size=1024,
         plotter=ValidatorPlotter(),    
     )
     Rect_domain.add_validator(validator)
