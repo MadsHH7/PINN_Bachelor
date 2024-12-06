@@ -155,6 +155,7 @@ def run(cfg: ModulusConfig) -> None:
         outvar = {"u": inlet_u_nd, "v": inlet_v_nd, "w":inlet_w_nd},
         batch_size= cfg.batch_size.Inlet,
         # criteria=Eq(y,Pipe.inlet_center[1]),
+        quasirandom=True,
         criteria= (x - Pipe.inlet_center[0])**2 + (y - Pipe.inlet_center[1])**2 + z**2 <= radius**2
     )
 
@@ -165,6 +166,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.outlet_pipe,
         outvar = {"p": outlet_p_nd,},
         batch_size= cfg.batch_size.Inlet,
+        quasirandom=True,
         criteria= ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 <= radius**2),
     )
 
@@ -176,6 +178,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.geometry,
         outvar = {"u": noslip_u_nd, "v": noslip_v_nd, "w": noslip_w_nd},
         batch_size = cfg.batch_size.Walls,
+        quasirandom=True,
         criteria=And(
             ((x - Pipe.inlet_center[0]) ** 2 + (y - Pipe.inlet_center[1]) ** 2 + z**2 > radius**2),
             ((x - Pipe.outlet_center[0]) ** 2 + (y - Pipe.outlet_center[1]) ** 2 + z**2 > radius**2),
@@ -189,6 +192,7 @@ def run(cfg: ModulusConfig) -> None:
         geometry= Pipe.geometry,
         outvar={"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0,},
         batch_size= cfg.batch_size.Interior,
+        quasirandom=True,
         lambda_weighting = {
             "continuity": Symbol("sdf"),
             "momentum_x": Symbol("sdf"),
@@ -214,10 +218,11 @@ def run(cfg: ModulusConfig) -> None:
             geometry=plane,
             outvar={"normal_dot_vel": mass_flow_rate},
             batch_size=1,
-            integral_batch_size=500,
+            quasirandom=True,
+            integral_batch_size=100,
             lambda_weighting= {"normal_dot_vel": 1},
         )
-        # Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
+        Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
     data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
     key = "pt1"
@@ -240,9 +245,10 @@ def run(cfg: ModulusConfig) -> None:
     
     
     
-    data_points = 500
-    flow_data_inlet = np.full((nr_points_inlet, 1), fill_value=100.0)
-    flow_data_outlet =  np.full((nr_points_outlet, 1), fill_value=100.0)
+    data_points = 50
+    # We are using extreamly high lambda weightings for the true data, since we have very little.
+    flow_data_inlet = np.full((nr_points_inlet, 1), fill_value=10000.0)
+    flow_data_outlet =  np.full((nr_points_outlet, 1), fill_value=10000.0)
 
     ## We want a function the chooses the correct data, for the inlet and outlet of the 
 

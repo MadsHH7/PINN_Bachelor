@@ -14,32 +14,12 @@ def translate(df, keys, translation):
     return df
 
 key = "1"
-pct_data = 5 / 100
 
-df = pd.read_csv(f'U0pt{key}_Laminar.csv')
+df = pd.read_csv(f'U0pt{key}_Laminar_validation.csv')
 
 keys_pts = ["X (m)", "Y (m)", "Z (m)"]
 keys_vel = ["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"]
 
-
-theta = 1.323541349
-angle = (pi / 2) + theta
-
-rot_matrix = (
-        [float(cos(angle)), float(-sin(angle)), 0],
-        [float(sin(angle)), float(cos(angle)), 0],
-        [0, 0, 1]
-    )
-
-translation= ([
-        -0.05,
-        -0.,
-        0
-    ])
-
-df = rotate(df, keys_pts, rot_matrix)
-df = rotate(df, keys_vel, rot_matrix)
-df = translate(df, keys_pts, translation)
 
 bend_angle = (1.323541349,1.323541349) # I did not add any dimension to the bend
 radius_pipe = (0.1,0.1)
@@ -56,94 +36,76 @@ Pipe = PipeBend(bend_angle_range= bend_angle,
                 inlet_pipe_length_range=inlet_pipe_length,
                 outlet_pipe_length_range=outlet_pipe_length)
 
-# bend_inlet_c = Pipe.bend_planes_centers[0]
-bend_inlet_c = (radius_bend[0]*cos(0.25*bend_angle[0]), radius_bend[0]*sin(0.25*bend_angle[0]))
-# bend_outlet_c = Pipe.bend_planes_centers[-1]
-bend_outlet_c = (radius_bend[0]*cos(1.0*bend_angle[0]), radius_bend[0]*sin(1.0*bend_angle[0]))
-print(bend_inlet_c)
-print(bend_outlet_c)
 bend_inlet_index = []
 bend_outlet_index = []
 n_inlet = (0,1,0)
 n_outlet = (outlet_pipe_length[0] * cos(bend_angle[0] + pi / 2), outlet_pipe_length[0] * sin(bend_angle[0] + pi / 2),0)
+# print("length of n_outlet: ", (n_outlet[0]**2+n_outlet[1]**2+n_outlet[2]**2)**0.5)
+print(n_outlet)
 print("Geometry was created")
 # It seems like there are no points on the plane, which means that planes are probably not viabel.
 
-scale = 0.001 # Controls cylinder width
-b_i_upper = (radius_bend[0]*cos(0.25*bend_angle[0])+n_inlet[0]*scale, # The upper point for the inlet
-             + radius_bend[0]*sin(0.25*bend_angle[0])+n_inlet[1]*scale,
-             + 0 + n_inlet[2]*scale)
 
-b_i_under = (radius_bend[0]*cos(0.25*bend_angle[0])-n_inlet[0]*scale, # The bottom point for the inlet cylinder
-             radius_bend[0]*sin(0.25*bend_angle[0])-n_inlet[1]*scale,
-             0 - n_inlet[2]*scale)
-
-b_u_upper = (radius_bend[0]*cos(1.0*bend_angle[0]+n_outlet[0]*scale),
-             radius_bend[0]*sin(1.0*bend_angle[0]+n_outlet[1]*scale),
-             0+n_outlet[2]*scale)
-
-b_u_under = (radius_bend[0]*cos(1.0*bend_angle[0]-n_outlet[0]*scale),
-             radius_bend[0]*sin(1.0*bend_angle[0]-n_outlet[1]*scale),
-             0-n_outlet[2]*scale)
-
+# The center of the inlet and outlet
 inlet_c = (radius_bend[0], -inlet_pipe_length[0],0)
-outlet_c = Pipe.outlet_center
+outlet_c =  (-outlet_pipe_length[0]*sin(bend_angle[0]) + radius_bend[0]*cos(bend_angle[0]), outlet_pipe_length[0]*cos(bend_angle[0]) + radius_bend[0]*sin(bend_angle[0]),0)
 
-
-print("Inlet Cetner: ", inlet_c)
-print("Outlet Center: ", outlet_c)
-
+# We use the inlet and outlet centers and pipe directions to calculate the location of the bend inlet and outlet.
+b_i_c = (inlet_c[0]+inlet_pipe_length[0]*n_inlet[0],
+         inlet_c[1]+inlet_pipe_length[0]*n_inlet[1],
+          inlet_c[2]+inlet_pipe_length[0]*n_inlet[2])
+b_o_c = (outlet_c[0]-outlet_pipe_length[0]*n_outlet[0],
+         outlet_c[1]-outlet_pipe_length[0]*n_outlet[1],
+         outlet_c[2]-outlet_pipe_length[0]*n_outlet[2])
+print("Bend Inlet Center: ", b_i_c)
+print("Bend Outlet Cetner: ", b_o_c)
 count = 0
 Pipe.inlet
+# We iterate through all elements elements in the validation data, and check whether any are between the planes.
+for index, row in df.iterrows(): # The inlet loop
 
-for index, row in df.iterrows():
 
-    # Normal vector from inlet
-
-    # Using Cylinders
-    eq1 = ( n_inlet[0] * (row[keys_pts[0]]- b_i_upper[0])
-        + n_inlet[1] * (row[keys_pts[1]]- b_i_upper[1])
-        + n_inlet[2] * (row[keys_pts[2]]- b_i_upper[2]) <= 0)
+    # The bend inlet is defined to be at y=0 so this is easy to check.
+    eq1 = row[keys_pts[1]] <= 0.005
+    eq2 =row[keys_pts[1]] >= -0.005
     
-    eq2 = ( n_inlet[0] * (row[keys_pts[0]]- b_i_under[0])
-        + n_inlet[1] * (row[keys_pts[1]]- b_i_under[1])
-        + n_inlet[2] * (row[keys_pts[2]]- b_i_under[2]) >= 0)
-
     if eq1 and eq2: # note n[0]=n[2]= 0 so we have only 1 component.
+
         bend_inlet_index.append(index)
-    # eq1 = row[keys_pts[1]] == 0
-    # if eq1: # Using  y=0, this should be the bend inlet plane
-    #     bend_inlet_index.append(index)
-    #     count += 1
-    # Suplementary count
-    # eq3 = row[keys_pts[1]] <= bend_inlet_c[1]*1.001 and row[keys_pts[1]] >= bend_inlet_c[1]*0.999
-    # if eq3:
-    #     count += 1
 
-print("Inlet index was calulated")
-print("Points in inlet plane: ", len(bend_inlet_index))
-print("Count = ", count)
+for index, row in df.iterrows(): #
 
-for index, row in df.iterrows():
 
-    eq1 = ( n_inlet[0] * (row[keys_pts[0]]- b_u_upper[0])
-        + n_inlet[1] * (row[keys_pts[1]]- b_u_upper[1])
-        + n_inlet[2] * (row[keys_pts[2]]- b_u_upper[2]) <= 0)
+    # We use the equation for 2 planes each shifted slightly from the true bend outlet
+    eq1 = (n_outlet[0]* (row[keys_pts[0]]- b_o_c[0])
+        + n_outlet[1] * (row[keys_pts[1]]-b_o_c[1])
+        + n_outlet[2] * (row[keys_pts[2]] - b_o_c[2])) <= 0.001 # This value is choosen through trial and error.
     
-    eq2 = ( n_inlet[0] * (row[keys_pts[0]]- b_u_under[0])
-        + n_inlet[1] * (row[keys_pts[1]]- b_u_under[1])
-        + n_inlet[2] * (row[keys_pts[2]]- b_u_under[2]) >= 0)
+    eq2 = (n_outlet[0]* (row[keys_pts[0]]- b_o_c[0])
+        + n_outlet[1] * (row[keys_pts[1]]-b_o_c[1])
+        + n_outlet[2] * (row[keys_pts[2]]-b_o_c[2])) >= -0.001
     
     if eq1 and eq2:
         bend_outlet_index.append(index)
 
+print("Inlet index was calulated")
+print("Points in inlet plane: ", len(bend_inlet_index))
+
 print("Outlet index was calculated")
 print("Points in outlet plane:", len(bend_outlet_index))
+
+
+
+
+
+
+sample_points = 50
 
 bend_inlet = df.iloc[bend_inlet_index]
 bend_outlet = df.iloc[bend_outlet_index]
 
-
+bend_inlet = bend_inlet.sample(n=sample_points,random_state=42)
+bend_outlet = bend_outlet.sample(n=sample_points,random_state=42)
 
 # train_df = df.sample(frac = pct_data, random_state=42)
 
