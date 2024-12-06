@@ -37,7 +37,7 @@ from modulus.sym import quantity
 from modulus.sym.eq.non_dim import NonDimensionalizer, Scaler
 
 
-@modulus.sym.main(config_path="conf", config_name="config")
+@modulus.sym.main(config_path="conf", config_name="config_nondim")
 def run(cfg: ModulusConfig) -> None:
     # Physical quantities
     nu = quantity(0.00002, "m^2/s")
@@ -155,12 +155,12 @@ def run(cfg: ModulusConfig) -> None:
     )
     Pipe_domain.add_constraint(Walls, "Walls")
     
-    # Interior
-    Interior = PointwiseInteriorConstraint(
+    # Interior, split to increase resolution in bend
+    Interior_bend = PointwiseInteriorConstraint(
         nodes = nodes, 
-        geometry = Pipe.geometry,
+        geometry = Pipe.bend,
         outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
-        batch_size = cfg.batch_size.Interior,
+        batch_size = cfg.batch_size.Interior_bend,
         lambda_weighting = {
             "continuity": Symbol("sdf"),
             "momentum_x": Symbol("sdf"),
@@ -168,7 +168,37 @@ def run(cfg: ModulusConfig) -> None:
             "momentum_z": Symbol("sdf"),
         }
     )
-    Pipe_domain.add_constraint(Interior, "Interior")
+    Pipe_domain.add_constraint(Interior_bend, "Interior bend")
+    
+    # Interior
+    Interior_inlet = PointwiseInteriorConstraint(
+        nodes = nodes, 
+        geometry = Pipe.inlet_pipe,
+        outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
+        batch_size = cfg.batch_size.Interior_inlet,
+        lambda_weighting = {
+            "continuity": Symbol("sdf"),
+            "momentum_x": Symbol("sdf"),
+            "momentum_y": Symbol("sdf"),
+            "momentum_z": Symbol("sdf"),
+        }
+    )
+    Pipe_domain.add_constraint(Interior_inlet, "Interior inlet")
+    
+    # Interior
+    Interior_outlet = PointwiseInteriorConstraint(
+        nodes = nodes, 
+        geometry = Pipe.outlet_pipe,
+        outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0, "momentum_z": 0.0},
+    batch_size = cfg.batch_size.Interior_outlet,
+        lambda_weighting = {
+            "continuity": Symbol("sdf"),
+            "momentum_x": Symbol("sdf"),
+            "momentum_y": Symbol("sdf"),
+            "momentum_z": Symbol("sdf"),
+        }
+    )
+    Pipe_domain.add_constraint(Interior_outlet, "Interior outlet")
     
     # Integral constraint
     Volumetric_flow = pi * radius**2 * nd.ndim(inlet_v)
@@ -184,7 +214,7 @@ def run(cfg: ModulusConfig) -> None:
         Pipe_domain.add_constraint(integral, f"Integral{i}")
     
     # Lastly add inferencer
-    n_pts = int(5e4)
+    n_pts = int(1e5)
     inference_pts = Pipe.geometry.sample_interior(nr_points=n_pts)
     
     xs = inference_pts["x"]

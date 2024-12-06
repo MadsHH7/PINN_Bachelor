@@ -40,7 +40,7 @@ def run(cfg: ModulusConfig) -> None:
 
     # ze = ZeroEquation(nu = 0.00002, dim = 3, time = False, max_distance = Max(Symbol("sdf")))
     # ns = NavierStokes(nu = ze.equations["nu"], rho = 500, dim = 3, time = False)
-    ns = NavierStokes(nu=0.00002, rho=1, dim=3, time=False)
+    ns = NavierStokes(nu=0.002, rho=25, dim=3, time=False)
 
     # Setup things for the integral continuity condition
     normal_dot_vel = NormalDotVec()
@@ -145,8 +145,8 @@ def run(cfg: ModulusConfig) -> None:
     
     # # Lastly add inferencer
     
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
-    data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
     key = "pt1"
     
     val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")
