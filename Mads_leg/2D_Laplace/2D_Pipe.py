@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from sympy import Symbol, Function, Number, Eq, Abs, cos, pi, And
 
 import modulus.sym
@@ -12,6 +13,9 @@ from modulus.sym.domain.constraint import (
 )
 from modulus.sym.key import Key
 from Laplace_EQ import LaplaceEquation
+
+from modulus.sym.utils.io import ValidatorPlotter, csv_to_dict
+from modulus.sym.domain.validator import PointwiseValidator
 
 
 pi = float(pi)
@@ -30,34 +34,25 @@ def run(cfg: ModulusConfig) -> None:
     nodes = lp.make_nodes() + [flow_net.make_node(name="flow_network")]
 
     # Make geometry
-    height = 1.0
-    width = 0.5
     x, y = Symbol("x"), Symbol("y")
     
-    # Define inlet pipe
-    origen_inlet = (0.0, 0.0)
-    rec1 = Rectangle(origen_inlet, (origen_inlet[0] + width, origen_inlet[1] + height))
-    
-    # Define our outlet pipe, swap height and width
-    origen_outlet = (0.5, 1.0)
-    rec2 = Rectangle(origen_outlet, (origen_outlet[0] + height, origen_outlet[1] + width))
-    
     # Define and cut our circle
-    center = (0.5, 1.0)     # Center of the circle
-    radius = 0.5            # Radius of the circle
+    center = (0.0, 0.0)     # Center of the circle
+    radius = 3.0            # Radius of the circle
     circ1 = Circle(center = center, radius = radius)
-    cut_rect = Rectangle((0.0, 1.0), (0.5, 1.5))    # Define our cut rectangle to be the point where our other pipe ends, and the upper right hand corner we wish to end at
+    cut_rect = Rectangle((0.0, 0.0), (3.0, 3.0))    
+    # Define our cut rectangle to be the point where our other pipe ends, and the upper right hand corner we wish to end at
 
     circle = circ1 & cut_rect
 
     # Make the bend on the inside corner
-    rec_inner = Rectangle((0.5, 0.875), (0.625, 1.0))
-    cut_circ = Circle(center = (0.625, 0.875), radius = 0.125)
+    rec_inner = Rectangle((0.0, 0.0), (1.0, 1.0))
+    cut_circ = Circle(center = (0.0, 0.0), radius = 1.0)
 
-    bend = rec_inner - cut_circ
+    bend = rec_inner - (rec_inner - cut_circ)
 
     # Add all the geometries
-    Pipe = rec1 + circle + rec2 + bend
+    Pipe = circle - bend
 
     # Make domain
     Pipe_domain = Domain()
@@ -65,10 +60,9 @@ def run(cfg: ModulusConfig) -> None:
     # Inlet
     Inlet = PointwiseBoundaryConstraint(
         nodes=nodes,
-        geometry=rec1,
+        geometry=Pipe,
         outvar={"u": 0.0, "v": 1.0},
         batch_size=cfg.batch_size.Inlet,
-        # lambda_weighting={"u": 1.0, "v": 100.0 - cos(2*x*pi)**2},  # weight edges to be zero
         criteria= Eq(y, 0.0),
     )
     Pipe_domain.add_constraint(Inlet, "inlet")
@@ -76,69 +70,22 @@ def run(cfg: ModulusConfig) -> None:
     # Outlet
     Outlet = PointwiseBoundaryConstraint(
         nodes=nodes,
-        geometry=rec2,
+        geometry=Pipe,
         outvar={"p": 0},
         batch_size=cfg.batch_size.Inlet,
-        criteria= Eq(x, 1.5),
+        criteria= Eq(x, 0.0),
     )
     Pipe_domain.add_constraint(Outlet, "outlet")
     
-    # Define no penetration in inlet pipe
-    Inlet_pipe_left = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry = rec1,
-        outvar={"u": 0.0},
-        batch_size=cfg.batch_size.NoSlip,
-        criteria=And(Eq(x, 0.0), y > 0.0)
-    )
-    Pipe_domain.add_constraint(Inlet_pipe_left, "IP_left")
-    
-    Inlet_pipe_right = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry = rec1,
-        outvar={"u": 0.0},
-        batch_size=cfg.batch_size.NoSlip,
-        criteria= And(Eq(x, 0.5), y <= 0.875, y > 0.0)
-    )
-    Pipe_domain.add_constraint(Inlet_pipe_right, "IP_right")
-
     # Define the boundaries for our bend
     Outer_bend = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = Pipe,
         outvar= {"normal_circle_outer": 0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= And((x<=0.5), (y >= 1.0))
+        criteria= And((x > 0.0), (y > 0.0))
     )
     Pipe_domain.add_constraint(Outer_bend, "outer_bend")
-    
-    Inner_bend = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry = Pipe,
-        outvar= {"normal_circle_inner": 0},
-        batch_size=cfg.batch_size.NoSlip,
-        criteria= And((0.5 <= x), x <= 0.625, (0.875 <= y), y <= 1)
-    )
-    Pipe_domain.add_constraint(Inner_bend, "inner_bend")
-    
-    # Define the boundary for the outlet pipe
-    Outlet_pipe_upper = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry= rec2,
-        outvar= {"v": 0.0},
-        batch_size=cfg.batch_size.NoSlip,
-        criteria= And(Eq(y, 1.5), x < 1.5)
-    )
-    Pipe_domain.add_constraint(Outlet_pipe_upper, "OP_upper")
-    
-    Outlet_pipe_lower = PointwiseBoundaryConstraint(
-        nodes = nodes,
-        geometry= rec2,
-        outvar= {"v": 0.0},
-        batch_size=cfg.batch_size.NoSlip,
-        criteria= And(Eq(y, 1.0), x >= 0.625, x < 1.5)
-    )
-    Pipe_domain.add_constraint(Outlet_pipe_lower, "OP_lower")
     
     # Define the interior points
     interior = PointwiseInteriorConstraint(
@@ -146,13 +93,33 @@ def run(cfg: ModulusConfig) -> None:
         geometry=Pipe,
         outvar={"continuity": 0, "irrotational": 0, "bernoulli": 0}, 
         batch_size=cfg.batch_size.Interior,
-        lambda_weighting={
-            "continuity": Symbol("sdf"),
-            "irrotational": Symbol("sdf"), 
-            "bernoulli": Symbol("sdf")
-        },
     )
     Pipe_domain.add_constraint(interior, "interior")
+    
+    # Add validator
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    ## Add validator
+    # Find the validation data
+    val_df = os.path.join(data_path, "LaplaceBend2D.csv")
+    mapping = {"u": "u", "v": "v", "x": "x", "y": "y"}
+    val_var = csv_to_dict(to_absolute_path(val_df), mapping)
+    
+    val_invar_numpy = {
+        key: value for key, value in val_var.items() if key in ["x", "y"]
+    }
+    val_outvar_numpy = {
+        key: value for key, value in val_var.items() if key in ["u", "v"]
+    }
+    
+    validator = PointwiseValidator(
+        nodes=nodes,
+        invar=val_invar_numpy,
+        true_outvar=val_outvar_numpy,
+        batch_size=1024,
+        plotter=ValidatorPlotter(),    
+    )
+    Pipe_domain.add_validator(validator)
     
     # Make solver
     slv = Solver(cfg, Pipe_domain)
