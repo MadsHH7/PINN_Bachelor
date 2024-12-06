@@ -14,37 +14,17 @@ def translate(df, keys, translation):
     return df
 
 key = "1"
-pct_data = 5 / 100
 
-df = pd.read_csv(f'U0pt{key}_Laminar.csv')
+df = pd.read_csv(f'U0pt{key}_Laminar_validation.csv')
 
 keys_pts = ["X (m)", "Y (m)", "Z (m)"]
 keys_vel = ["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"]
 
 
-theta = 1.323541349
-angle = (pi / 2) + theta
-
-rot_matrix = (
-        [float(cos(angle)), float(-sin(angle)), 0],
-        [float(sin(angle)), float(cos(angle)), 0],
-        [0, 0, 1]
-    )
-
-translation= ([
-        -0.05,
-        -0.,
-        0
-    ])
-
-df = rotate(df, keys_pts, rot_matrix)
-df = rotate(df, keys_vel, rot_matrix)
-df = translate(df, keys_pts, translation)
-
 bend_angle = (1.323541349,1.323541349) # I did not add any dimension to the bend
 radius_pipe = (0.1,0.1)
 radius_bend = (0.2,0.2)
-inlet_pipe_length = (0.2,0.2)
+inlet_pipe_length = (0.1,0.1)
 outlet_pipe_length = (1,1)
 
 radius = radius_pipe[0]
@@ -56,40 +36,88 @@ Pipe = PipeBend(bend_angle_range= bend_angle,
                 inlet_pipe_length_range=inlet_pipe_length,
                 outlet_pipe_length_range=outlet_pipe_length)
 
-# bend_inlet_c = Pipe.bend_planes_centers[0]
-bend_inlet_c = (radius_bend[0]*cos(0.25*bend_angle[0]), radius_bend[0]*sin(0.25*bend_angle[0]))
-# bend_outlet_c = Pipe.bend_planes_centers[-1]
-bend_outlet_c = (radius_bend[0]*cos(1.0*bend_angle[0]), radius_bend[0]*sin(1.0*bend_angle[0]))
-print(bend_inlet_c)
-print(bend_outlet_c)
 bend_inlet_index = []
 bend_outlet_index = []
 
+# bend_planes_index = []
+
+n_inlet = (0,1,0)
+n_outlet = (outlet_pipe_length[0] * cos(bend_angle[0] + pi / 2), outlet_pipe_length[0] * sin(bend_angle[0] + pi / 2),0)
+# print("length of n_outlet: ", (n_outlet[0]**2+n_outlet[1]**2+n_outlet[2]**2)**0.5)
+print(n_outlet)
 print("Geometry was created")
-for index, row in df.iterrows():
-    if ((row[keys_pts[0]] - bend_inlet_c[0])**2 + (row[keys_pts[1]] - bend_inlet_c[1])**2 + row[keys_pts[2]]**2 <= radius**2):
+# It seems like there are no points on the plane, which means that planes are probably not viabel.
+
+
+# The center of the inlet and outlet
+inlet_c = (radius_bend[0], -inlet_pipe_length[0],0)
+outlet_c =  (-outlet_pipe_length[0]*sin(bend_angle[0]) + radius_bend[0]*cos(bend_angle[0]), outlet_pipe_length[0]*cos(bend_angle[0]) + radius_bend[0]*sin(bend_angle[0]),0)
+
+# We use the inlet and outlet centers and pipe directions to calculate the location of the bend inlet and outlet.
+b_i_c = (inlet_c[0]+inlet_pipe_length[0]*n_inlet[0],
+         inlet_c[1]+inlet_pipe_length[0]*n_inlet[1],
+          inlet_c[2]+inlet_pipe_length[0]*n_inlet[2])
+b_o_c = (outlet_c[0]-outlet_pipe_length[0]*n_outlet[0],
+         outlet_c[1]-outlet_pipe_length[0]*n_outlet[1],
+         outlet_c[2]-outlet_pipe_length[0]*n_outlet[2])
+print("Bend Inlet Center: ", b_i_c)
+print("Bend Outlet Cetner: ", b_o_c)
+count = 0
+Pipe.inlet
+# We iterate through all elements elements in the validation data, and check whether any are between the planes.
+for index, row in df.iterrows(): # The inlet loop
+
+
+    # The bend inlet is defined to be at y=0 so this is easy to check.
+    eq1 = row[keys_pts[1]] <= 0.005
+    eq2 =row[keys_pts[1]] >= -0.005
+    
+    if eq1 and eq2: # note n[0]=n[2]= 0 so we have only 1 component.
+
         bend_inlet_index.append(index)
 
-print("Inlet index was calulated")
+for index, row in df.iterrows(): #
 
-for index, row in df.iterrows():
-    if ((row[keys_pts[0]] - bend_outlet_c[0])**2 + (row[keys_pts[1]] - bend_outlet_c[1])**2 + row[keys_pts[2]]**2 <= radius**2):
+
+    # We use the equation for 2 planes each shifted slightly from the true bend outlet
+    eq1 = (n_outlet[0]* (row[keys_pts[0]]- b_o_c[0])
+        + n_outlet[1] * (row[keys_pts[1]]-b_o_c[1])
+        + n_outlet[2] * (row[keys_pts[2]] - b_o_c[2])) <= 0.001 # This value is choosen through trial and error.
+    
+    eq2 = (n_outlet[0]* (row[keys_pts[0]]- b_o_c[0])
+        + n_outlet[1] * (row[keys_pts[1]]-b_o_c[1])
+        + n_outlet[2] * (row[keys_pts[2]]-b_o_c[2])) >= -0.001
+    
+    if eq1 and eq2:
         bend_outlet_index.append(index)
 
-print("Outlet index was calculated")
+print("Index was calculated")
+print("Points in inlet and outlet planes: ", len(bend_inlet_index)+len(bend_outlet_index))
+
+
+
+
+
+
+
+
+sample_points = 50
 
 bend_inlet = df.iloc[bend_inlet_index]
 bend_outlet = df.iloc[bend_outlet_index]
+bend_inlet = bend_inlet.sample(n=sample_points,random_state=42)
+bend_outlet = bend_outlet.sample(n=sample_points,random_state=42)
 
-
-
+bend_inlet_outlet = pd.concat([bend_inlet,bend_outlet])
 # train_df = df.sample(frac = pct_data, random_state=42)
 
-validation_df = df.drop(bend_inlet.index)
-validation_df = validation_df.drop(bend_outlet.index)
+# validation_df = df.drop(bend_inlet.index)
+# validation_df = validation_df.drop(bend_outlet.index)
 
-bend_inlet.to_csv(f'U0pt{key}_Bend_Inlet.csv', index=False)
-bend_outlet.to_csv(f'U0pt{key}_Bend_Outlet.csv', index=False)
-validation_df.to_csv(f'U0pt{key}_Laminar_validation_BEND.csv', index=False)
 
-# /zhome/e3/5/167986/Desktop/PINN/bin/python /zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/GenerateRealisticData.py
+bend_inlet_outlet.to_csv(f'U0pt{key}_RealisticData.csv', index=False)
+# bend_inlet.to_csv(f'U0pt{key}_Bend_Inlet.csv', index=False)
+# bend_outlet.to_csv(f'U0pt{key}_Bend_Outlet.csv', index=False)
+# validation_df.to_csv(f'U0pt{key}_Laminar_validation_BEND.csv', index=False)
+
+# /zhome/e3/5/167986/Desktop/PINN/bin/python /zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/3D/GenerateRealisticData.py
