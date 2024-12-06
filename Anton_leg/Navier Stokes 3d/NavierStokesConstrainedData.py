@@ -243,8 +243,6 @@ def run(cfg: ModulusConfig) -> None:
     data_points = 500
     flow_data_inlet = np.full((nr_points_inlet, 1), fill_value=100.0)
     flow_data_outlet =  np.full((nr_points_outlet, 1), fill_value=100.0)
-    bend_inlet = Pipe.bend_planes_centers[0]
-    bend_outlet = Pipe.bend_planes_centers[-1]
 
     ## We want a function the chooses the correct data, for the inlet and outlet of the 
 
@@ -280,7 +278,9 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(flow_bend_outlet, "flow_bend_outlet")
 
 
-    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation_BEND.csv")
+
+    
+    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")
     mapping = {"Velocity[i] (m/s)": "u", "Velocity[j] (m/s)": "v", "Velocity[k] (m/s)": "w", "X (m)": "x", "Y (m)": "y", "Z (m)": "z"}
     val_var = csv_to_dict(to_absolute_path(val_df), mapping)
 

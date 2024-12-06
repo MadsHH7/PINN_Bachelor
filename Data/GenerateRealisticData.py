@@ -44,7 +44,7 @@ df = translate(df, keys_pts, translation)
 bend_angle = (1.323541349,1.323541349) # I did not add any dimension to the bend
 radius_pipe = (0.1,0.1)
 radius_bend = (0.2,0.2)
-inlet_pipe_length = (0.2,0.2)
+inlet_pipe_length = (0.1,0.1)
 outlet_pipe_length = (1,1)
 
 radius = radius_pipe[0]
@@ -64,19 +64,81 @@ print(bend_inlet_c)
 print(bend_outlet_c)
 bend_inlet_index = []
 bend_outlet_index = []
-
+n_inlet = (0,1,0)
+n_outlet = (outlet_pipe_length[0] * cos(bend_angle[0] + pi / 2), outlet_pipe_length[0] * sin(bend_angle[0] + pi / 2),0)
 print("Geometry was created")
+# It seems like there are no points on the plane, which means that planes are probably not viabel.
+
+scale = 0.001 # Controls cylinder width
+b_i_upper = (radius_bend[0]*cos(0.25*bend_angle[0])+n_inlet[0]*scale, # The upper point for the inlet
+             + radius_bend[0]*sin(0.25*bend_angle[0])+n_inlet[1]*scale,
+             + 0 + n_inlet[2]*scale)
+
+b_i_under = (radius_bend[0]*cos(0.25*bend_angle[0])-n_inlet[0]*scale, # The bottom point for the inlet cylinder
+             radius_bend[0]*sin(0.25*bend_angle[0])-n_inlet[1]*scale,
+             0 - n_inlet[2]*scale)
+
+b_u_upper = (radius_bend[0]*cos(1.0*bend_angle[0]+n_outlet[0]*scale),
+             radius_bend[0]*sin(1.0*bend_angle[0]+n_outlet[1]*scale),
+             0+n_outlet[2]*scale)
+
+b_u_under = (radius_bend[0]*cos(1.0*bend_angle[0]-n_outlet[0]*scale),
+             radius_bend[0]*sin(1.0*bend_angle[0]-n_outlet[1]*scale),
+             0-n_outlet[2]*scale)
+
+inlet_c = (radius_bend[0], -inlet_pipe_length[0],0)
+outlet_c = Pipe.outlet_center
+
+
+print("Inlet Cetner: ", inlet_c)
+print("Outlet Center: ", outlet_c)
+
+count = 0
+Pipe.inlet
+
 for index, row in df.iterrows():
-    if ((row[keys_pts[0]] - bend_inlet_c[0])**2 + (row[keys_pts[1]] - bend_inlet_c[1])**2 + row[keys_pts[2]]**2 <= radius**2):
+
+    # Normal vector from inlet
+
+    # Using Cylinders
+    eq1 = ( n_inlet[0] * (row[keys_pts[0]]- b_i_upper[0])
+        + n_inlet[1] * (row[keys_pts[1]]- b_i_upper[1])
+        + n_inlet[2] * (row[keys_pts[2]]- b_i_upper[2]) <= 0)
+    
+    eq2 = ( n_inlet[0] * (row[keys_pts[0]]- b_i_under[0])
+        + n_inlet[1] * (row[keys_pts[1]]- b_i_under[1])
+        + n_inlet[2] * (row[keys_pts[2]]- b_i_under[2]) >= 0)
+
+    if eq1 and eq2: # note n[0]=n[2]= 0 so we have only 1 component.
         bend_inlet_index.append(index)
+    # eq1 = row[keys_pts[1]] == 0
+    # if eq1: # Using  y=0, this should be the bend inlet plane
+    #     bend_inlet_index.append(index)
+    #     count += 1
+    # Suplementary count
+    # eq3 = row[keys_pts[1]] <= bend_inlet_c[1]*1.001 and row[keys_pts[1]] >= bend_inlet_c[1]*0.999
+    # if eq3:
+    #     count += 1
 
 print("Inlet index was calulated")
+print("Points in inlet plane: ", len(bend_inlet_index))
+print("Count = ", count)
 
 for index, row in df.iterrows():
-    if ((row[keys_pts[0]] - bend_outlet_c[0])**2 + (row[keys_pts[1]] - bend_outlet_c[1])**2 + row[keys_pts[2]]**2 <= radius**2):
+
+    eq1 = ( n_inlet[0] * (row[keys_pts[0]]- b_u_upper[0])
+        + n_inlet[1] * (row[keys_pts[1]]- b_u_upper[1])
+        + n_inlet[2] * (row[keys_pts[2]]- b_u_upper[2]) <= 0)
+    
+    eq2 = ( n_inlet[0] * (row[keys_pts[0]]- b_u_under[0])
+        + n_inlet[1] * (row[keys_pts[1]]- b_u_under[1])
+        + n_inlet[2] * (row[keys_pts[2]]- b_u_under[2]) >= 0)
+    
+    if eq1 and eq2:
         bend_outlet_index.append(index)
 
 print("Outlet index was calculated")
+print("Points in outlet plane:", len(bend_outlet_index))
 
 bend_inlet = df.iloc[bend_inlet_index]
 bend_outlet = df.iloc[bend_outlet_index]
