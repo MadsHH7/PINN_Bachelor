@@ -89,7 +89,7 @@ def run(cfg: ModulusConfig) -> None:
     geo = geo.scale(scaling)
     
     # Make constraints
-    in_vel = 0.01
+    in_vel = 0.1
     
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
@@ -101,13 +101,13 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Inlet, "Inlet")
     
     # Outlet
-    
+    y_max = 403.12714072 * scaling
     Outlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = geo,
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
-        criteria = Eq(y, 0.4),
+        criteria = Eq(y, y_max),
     )
     Pipe_domain.add_constraint(Outlet, "Outlet")
 
@@ -115,12 +115,12 @@ def run(cfg: ModulusConfig) -> None:
     
     Walls = PointwiseBoundaryConstraint(
         nodes = nodes,
-        geometry = Pipe.geometry,
+        geometry = geo,
         outvar = {"u": 0.0, "v": 0.0},
         batch_size = cfg.batch_size.NoSlip,
         criteria = And(
             x > 0.0,
-            y < 0.4,
+            y < y_max,
         )
     )
     Pipe_domain.add_constraint(Walls, "Walls")
@@ -128,54 +128,54 @@ def run(cfg: ModulusConfig) -> None:
     # Interior
     Interior = PointwiseInteriorConstraint(
         nodes = nodes, 
-        geometry = Pipe.geometry,
+        geometry = geo,
         outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0},
         batch_size = cfg.batch_size.Interior,
     )
     Pipe_domain.add_constraint(Interior, "Interior")
     
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
     # data_path = f"/home/madshh7/PINN_Bachelor/Data"
-
-    input, output, nr_points = get_data(
-        df_path= os.path.join(data_path, "bend_data_mvel001.csv"),
-        desired_input_keys=["x", "y"],
-        original_input_keys=["X (m)", "Y (m)"],
-        desired_output_keys=["u", "v", "p"],
-        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)"],
-    )
-    
-    # flow_data = np.full((nr_points, 1), fill_value=100.0)
-    
-    flow = PointwiseConstraint.from_numpy(
-        nodes = nodes,
-        invar = input,
-        outvar = output,
-        batch_size = nr_points,
-    )
-    Pipe_domain.add_constraint(flow, "flow_data")
-    
-    ## Add validator
-    # Find the validation data
-    val_df = os.path.join(data_path, "bend_data_mvel001.csv"),
-    mapping = {"X (m)": "x", "Y (m)": "y", "Pressure (Pa)": p}
-    val_var = csv_to_dict(to_absolute_path(val_df), mapping)
-    
-    val_invar_numpy = {
-        key: value for key, value in val_var.items() if key in ["x", "y"]
-    }
-    val_outvar_numpy = {
-        key: value for key, value in val_var.items() if key in ["p"]
-    }
-    
-    validator = PointwiseValidator(
-        nodes=nodes,
-        invar=val_invar_numpy,
-        true_outvar=val_outvar_numpy,
-        batch_size=1024,
-        plotter=None    
-    )
-    Pipe_domain.add_validator(validator)
+    if os.path.exists(to_absolute_path(data_path)):
+        input, output, nr_points = get_data(
+            df_path= to_absolute_path(data_path),
+            desired_input_keys=["x", "y"],
+            original_input_keys=["X (m)", "Y (m)"],
+            desired_output_keys=["u", "v", "p"],
+            original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)"],
+        )
+        
+        # flow_data = np.full((nr_points, 1), fill_value=100.0)
+        
+        flow = PointwiseConstraint.from_numpy(
+            nodes = nodes,
+            invar = input,
+            outvar = output,
+            batch_size = nr_points,
+        )
+        Pipe_domain.add_constraint(flow, "flow_data")
+        
+        ## Add validator
+        # Find the validation data
+        val_df = data_path
+        mapping = {"Pressure (Pa)": "p", "X (m)": "x", "Y (m)": "y"}
+        val_var = csv_to_dict(to_absolute_path(val_df), mapping)
+        
+        val_invar_numpy = {
+            key: value for key, value in val_var.items() if key in ["x", "y"]
+        }
+        val_outvar_numpy = {
+            key: value for key, value in val_var.items() if key in ["p"]
+        }
+        
+        validator = PointwiseValidator(
+            nodes=nodes,
+            invar=val_invar_numpy,
+            true_outvar=val_outvar_numpy,
+            batch_size=1024,
+            plotter=ValidatorPlotter(),
+        )
+        Pipe_domain.add_validator(validator)
     
         # Make solver
     slv = Solver(cfg, Pipe_domain)
