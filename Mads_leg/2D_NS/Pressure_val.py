@@ -89,7 +89,7 @@ def run(cfg: ModulusConfig) -> None:
     geo = geo.scale(scaling)
     
     # Make constraints
-    in_vel = 0.1
+    in_vel = 0.01
     
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
@@ -134,8 +134,8 @@ def run(cfg: ModulusConfig) -> None:
     )
     Pipe_domain.add_constraint(Interior, "Interior")
     
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
-    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
+    data_path = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
     if os.path.exists(to_absolute_path(data_path)):
         input, output, nr_points = get_data(
             df_path= to_absolute_path(data_path),
@@ -144,7 +144,6 @@ def run(cfg: ModulusConfig) -> None:
             desired_output_keys=["u", "v", "p"],
             original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)"],
         )
-        
         # flow_data = np.full((nr_points, 1), fill_value=100.0)
         
         flow = PointwiseConstraint.from_numpy(
@@ -158,14 +157,14 @@ def run(cfg: ModulusConfig) -> None:
         ## Add validator
         # Find the validation data
         val_df = data_path
-        mapping = {"Pressure (Pa)": "p", "X (m)": "x", "Y (m)": "y"}
+        mapping = {"Pressure (Pa)": "p", "X (m)": "x", "Y (m)": "y", "Velocity[j] (m/s)": "v", "Velocity[i] (m/s)": "u"}
         val_var = csv_to_dict(to_absolute_path(val_df), mapping)
         
         val_invar_numpy = {
             key: value for key, value in val_var.items() if key in ["x", "y"]
         }
         val_outvar_numpy = {
-            key: value for key, value in val_var.items() if key in ["p"]
+            key: value for key, value in val_var.items() if key in ["u", "v", "p"]
         }
         
         validator = PointwiseValidator(
@@ -187,8 +186,8 @@ def run(cfg: ModulusConfig) -> None:
 if __name__ == "__main__":
     run()
     # Paraview
-    # u*iHat + v*jHat + w*kHat
-    # "Velocity[i] (m/s)" * iHat + "Velocity[j] (m/s)" * jHat + "Velocity[k] (m/s)" * kHat
+    # u*iHat + v*jHat
+    # "Velocity[i] (m/s)" * iHat + "Velocity[j] (m/s)" * jHat
 
     # DTU HPC interactive
     # sxm2sh
