@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from sympy import Symbol, Function, Number, Eq, Abs, cos, pi, And
+from sympy import Symbol, Function, Number, Eq, Abs, cos, pi, And, Or
 
 import modulus.sym
 from modulus.sym.hydra import instantiate_arch, ModulusConfig, to_absolute_path
@@ -83,9 +83,21 @@ def run(cfg: ModulusConfig) -> None:
         geometry = Pipe,
         outvar= {"normal_circle_outer": 0},
         batch_size=cfg.batch_size.NoSlip,
-        criteria= And((x > 0.0), (y > 0.0))
+        criteria= Or(And((x > 0.0), (y > 1.0)), And(x > 1.0, y > 0.0)),
+        lambda_weighting={"normal_circle_outer": 100.0},
     )
     Pipe_domain.add_constraint(Outer_bend, "outer_bend")
+
+    # Define the boundaries for our bend
+    Inner_bend = PointwiseBoundaryConstraint(
+        nodes = nodes,
+        geometry = Pipe,
+        outvar= {"normal_circle_inner": 0},
+        batch_size=cfg.batch_size.NoSlip,
+        criteria= And((x < 1.0), (y < 1.0)),
+        lambda_weighting={"normal_circle_inner": 100.0},
+    )
+    Pipe_domain.add_constraint(Inner_bend, "inner_bend")
     
     # Define the interior points
     interior = PointwiseInteriorConstraint(
@@ -93,12 +105,17 @@ def run(cfg: ModulusConfig) -> None:
         geometry=Pipe,
         outvar={"continuity": 0, "irrotational": 0, "bernoulli": 0}, 
         batch_size=cfg.batch_size.Interior,
+        lambda_weighting={
+            "continuity": Symbol("sdf"),
+            "irrotational": Symbol("sdf"),
+            "bernoulli": Symbol("sdf"),
+        },
     )
     Pipe_domain.add_constraint(interior, "interior")
     
     # Add validator
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
-    # data_path = f"/home/madshh7/PINN_Bachelor/Data"
+    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
+    data_path = f"/home/madshh7/PINN_Bachelor/Data/2D"
     ## Add validator
     # Find the validation data
     val_df = os.path.join(data_path, "LaplaceBend2D.csv")

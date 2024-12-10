@@ -20,13 +20,20 @@ defaults :
       - fully_connected
   - scheduler: tf_exponential_lr
   - optimizer: adam
-  - loss: sum
+  # - loss: sum
+  - loss: soft_adapt
   # - loss: relobralo
   # - loss: lr_annealing
   - _self_
 scheduler:
   decay_rate: 0.95
   decay_steps: 4000
+
+arch:
+  branch:
+    nr_layers: 3
+    layer_size: 128
+    activation_fn: "silu"
 
 training:
   rec_validation_freq: 1000
@@ -36,9 +43,9 @@ training:
   max_steps : 50000
 
 batch_size:
-  NoSlip: 100
-  Interior: 400
-  Inlet: 100
+  NoSlip: 400
+  Interior: 1000
+  Inlet: 200
 
 graph:
   func_arch: true
