@@ -51,11 +51,11 @@ class LaplaceEquation(PDE):
             v.diff(x, 1) - u.diff(y, 1)
         )
         self.equations["bernoulli"] = (
-            ((u**2 + v**2)**(0.5) / 2) + p/rho - c
+            ((u**2 + v**2) / 2) + p/rho - c
         )
         self.equations["normal_circle_outer"] = (
-            -(u * ( - x) + v * ( - y)) / 3.0
+            (u * (x) + v * (y)) / 3.0
         )
         self.equations["normal_circle_inner"] = (
-            (u * ( - x) + v * ( - y)) 
+            -(u * (x) + v * (y)) 
         )

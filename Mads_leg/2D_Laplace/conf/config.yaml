@@ -21,14 +21,14 @@ defaults :
   - scheduler: tf_exponential_lr
   - optimizer: adam
   # - loss: sum
-  - loss: soft_adapt
-  # - loss: relobralo
+  # - loss: soft_adapt
+  - loss: relobralo
   # - loss: lr_annealing
   - _self_
 scheduler:
   decay_rate: 0.95
-  decay_steps: 4000
-
+  decay_steps: 10000
+  
 arch:
   branch:
     nr_layers: 3
@@ -40,12 +40,12 @@ training:
   rec_inference_freq: 2000
   rec_monitor_freq: 1000
   rec_constraint_freq: 2000
-  max_steps : 50000
+  max_steps : 100000
 
 batch_size:
-  NoSlip: 400
+  NoSlip: 100
   Interior: 1000
-  Inlet: 200
+  Inlet: 100
 
 graph:
   func_arch: true

@@ -23,7 +23,7 @@ pi = float(pi)
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    lp = LaplaceEquation(dim=2)
+    lp = LaplaceEquation(dim=2, c=0.5)
 
     # Create network
     flow_net = instantiate_arch(
@@ -84,7 +84,7 @@ def run(cfg: ModulusConfig) -> None:
         outvar= {"normal_circle_outer": 0},
         batch_size=cfg.batch_size.NoSlip,
         criteria= Or(And((x > 0.0), (y > 1.0)), And(x > 1.0, y > 0.0)),
-        lambda_weighting={"normal_circle_outer": 100.0},
+        # lambda_weighting={"normal_circle_outer": 100.0},
     )
     Pipe_domain.add_constraint(Outer_bend, "outer_bend")
 
@@ -95,7 +95,7 @@ def run(cfg: ModulusConfig) -> None:
         outvar= {"normal_circle_inner": 0},
         batch_size=cfg.batch_size.NoSlip,
         criteria= And((x < 1.0), (y < 1.0)),
-        lambda_weighting={"normal_circle_inner": 100.0},
+        # lambda_weighting={"normal_circle_inner": 100.0},
     )
     Pipe_domain.add_constraint(Inner_bend, "inner_bend")
     
@@ -105,11 +105,11 @@ def run(cfg: ModulusConfig) -> None:
         geometry=Pipe,
         outvar={"continuity": 0, "irrotational": 0, "bernoulli": 0}, 
         batch_size=cfg.batch_size.Interior,
-        lambda_weighting={
-            "continuity": Symbol("sdf"),
-            "irrotational": Symbol("sdf"),
-            "bernoulli": Symbol("sdf"),
-        },
+        # lambda_weighting={
+        #     "continuity": Symbol("sdf"),
+        #     "irrotational": Symbol("sdf"),
+        #     "bernoulli": Symbol("sdf"),
+        # },
     )
     Pipe_domain.add_constraint(interior, "interior")
     
