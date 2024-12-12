@@ -134,8 +134,8 @@ def run(cfg: ModulusConfig) -> None:
     )
     Pipe_domain.add_constraint(Interior, "Interior")
     
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
-    data_path = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
     if os.path.exists(to_absolute_path(data_path)):
         input, output, nr_points = get_data(
             df_path= to_absolute_path(data_path),

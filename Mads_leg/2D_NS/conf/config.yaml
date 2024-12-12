@@ -34,6 +34,7 @@ arch:
     nr_layers: 3
     layer_size: 128
     activation_fn: "silu"
+    # drop: 0.2
 
 training:
   rec_validation_freq: 1000
