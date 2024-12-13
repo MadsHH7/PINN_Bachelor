@@ -107,9 +107,7 @@ def run(cfg: ModulusConfig) -> None:
         + Scaler(
             ["u", "v", "w", "p"],
             ["u_scaled", "v_scaled", "w_scaled", "p_scaled"],
-            # ["m/s", "m/s", "m/s", "m^2/s^2"],
             ["m/s", "m/s", "m/s", "kg/(m·s^2)"],
-            # ["m/s", "m/s", "m/s", "Pa"],
             nd
         ).make_node()
     )
