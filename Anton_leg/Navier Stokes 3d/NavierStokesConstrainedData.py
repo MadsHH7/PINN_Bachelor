@@ -219,74 +219,52 @@ def run(cfg: ModulusConfig) -> None:
             outvar={"normal_dot_vel": mass_flow_rate},
             batch_size=1,
             quasirandom=True,
-            integral_batch_size=100,
+            integral_batch_size=50,
             lambda_weighting= {"normal_dot_vel": 1},
         )
         Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data"
+    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/3D"
     key = "pt1"
 
-    input_bend_inlet, output_bend_inlet, nr_points_inlet = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Bend_Inlet.csv"),
+    input_bend, output_bend, nr_points = get_data(
+        df_path= os.path.join(data_path, f"U0{key}_Laminar_True_Domain_train.csv"),
         desired_input_keys=["x", "y", "z"],
         original_input_keys=["X (m)", "Y (m)", "Z (m)"],
         desired_output_keys=["u", "v", "w", "p"],
         original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
     )
 
-    input_bend_outlet, output_bend_outlet, nr_points_outlet = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_Bend_Outlet.csv"),
-        desired_input_keys=["x", "y", "z"],
-        original_input_keys=["X (m)", "Y (m)", "Z (m)"],
-        desired_output_keys=["u", "v", "w", "p"],
-        original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
-    )
     
     
-    
-    data_points = 50
+    # data_points = 1000
     # We are using extreamly high lambda weightings for the true data, since we have very little.
-    flow_data_inlet = np.full((nr_points_inlet, 1), fill_value=10000.0)
-    flow_data_outlet =  np.full((nr_points_outlet, 1), fill_value=10000.0)
+    flow_data = np.full((nr_points, 1), fill_value=10000.0)
+
 
     ## We want a function the chooses the correct data, for the inlet and outlet of the 
 
 
-    flow_bend_inlet = PointwiseConstraint.from_numpy(
+    flow_bend_data = PointwiseConstraint.from_numpy(
         nodes = nodes,
-        invar = input_bend_inlet,
-        outvar = output_bend_inlet,
-        batch_size = data_points,
+        invar = input_bend,
+        outvar = output_bend,
+        batch_size = nr_points,
         lambda_weighting={
-            "u": flow_data_inlet,
-            "v": flow_data_inlet,
-            "w": flow_data_inlet,
-            "p": flow_data_inlet,
+            "u": flow_data,
+            "v": flow_data,
+            "w": flow_data,
+            "p": flow_data,
         },
     )
     
-    Pipe_domain.add_constraint(flow_bend_inlet, "flow_bend_inlet")
+    Pipe_domain.add_constraint(flow_bend_data, "flow_bend_data")
 
-    flow_bend_outlet = PointwiseConstraint.from_numpy(
-        nodes = nodes,
-        invar = input_bend_outlet,
-        outvar = output_bend_outlet,
-        batch_size = data_points,
-        lambda_weighting={
-            "u": flow_data_outlet,
-            "v": flow_data_outlet,
-            "w": flow_data_outlet,
-            "p": flow_data_outlet,
-        },
-    )
-    
-    Pipe_domain.add_constraint(flow_bend_outlet, "flow_bend_outlet")
 
 
 
     
-    val_df = os.path.join(data_path, f"U0{key}_Laminar_validation.csv")
+    val_df = os.path.join(data_path, f"U0{key}_Laminar_True_Domain_validation.csv")
     mapping = {"Velocity[i] (m/s)": "u", "Velocity[j] (m/s)": "v", "Velocity[k] (m/s)": "w", "X (m)": "x", "Y (m)": "y", "Z (m)": "z"}
     val_var = csv_to_dict(to_absolute_path(val_df), mapping)
 

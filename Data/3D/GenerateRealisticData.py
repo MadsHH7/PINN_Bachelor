@@ -109,15 +109,15 @@ bend_inlet = bend_inlet.sample(n=sample_points,random_state=42)
 bend_outlet = bend_outlet.sample(n=sample_points,random_state=42)
 
 bend_inlet_outlet = pd.concat([bend_inlet,bend_outlet])
-# train_df = df.sample(frac = pct_data, random_state=42)
-
-# validation_df = df.drop(bend_inlet.index)
-# validation_df = validation_df.drop(bend_outlet.index)
 
 
-bend_inlet_outlet.to_csv(f'U0pt{key}_RealisticData.csv', index=False)
+validation_df = df.drop(bend_inlet_outlet.index)
+
+
+
+bend_inlet_outlet.to_csv(f'U0pt{key}_RealisticTrain.csv', index=False)
 # bend_inlet.to_csv(f'U0pt{key}_Bend_Inlet.csv', index=False)
 # bend_outlet.to_csv(f'U0pt{key}_Bend_Outlet.csv', index=False)
-# validation_df.to_csv(f'U0pt{key}_Laminar_validation_BEND.csv', index=False)
+validation_df.to_csv(f'U0pt{key}_RealisticValidation.csv', index=False)
 
 # /zhome/e3/5/167986/Desktop/PINN/bin/python /zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/3D/GenerateRealisticData.py

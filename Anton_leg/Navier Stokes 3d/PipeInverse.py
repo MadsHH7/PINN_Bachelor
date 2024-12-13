@@ -36,6 +36,7 @@ from modulus.sym.utils.io import (
     ValidatorPlotter,
     InferencerPlotter)
 from modulus.sym.eq.non_dim import NonDimensionalizer, Scaler
+from PositiveNu import PositiveNu
 
 @modulus.sym.main(config_path="confInverse", config_name="config_inverse")
 def run(cfg: ModulusConfig) -> None:
@@ -99,6 +100,7 @@ def run(cfg: ModulusConfig) -> None:
     nu = Symbol("nu")
     ze = ZeroEquation(nu = nu, max_distance=0.1 , dim = 3, time = False)
     ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
+    p_nu = PositiveNu(nu = ze.equations["nu"])
     # ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
     # max_distance kan bruge signed_distance fields i stedet for radius
     # Betyder at hvert punkt i dit rum får en afstand til geometriens overfflade. Fortæller om du er inde eller uden for geomtrien, og hvor langt fra den du er.
@@ -117,6 +119,11 @@ def run(cfg: ModulusConfig) -> None:
     )
     invert_net = instantiate_arch(
         input_keys = [Key("x"), Key("y"), Key("z")],
+        output_keys = [Key("nu")],
+        cfg = cfg.arch.fully_connected,
+    )
+    postive_nu_net = instantiate_arch(
+        input_keys = [Key("nu")],
         output_keys = [Key("nu")],
         cfg = cfg.arch.fully_connected,
     )
@@ -236,14 +243,21 @@ def run(cfg: ModulusConfig) -> None:
 
     key = "pt1"
 
+    # input_bend, output_bend, nr_points = get_data(
+    #     df_path= os.path.join(data_path, f"U0{key}_RealisticData.csv"),
+    #     desired_input_keys=["x", "y", "z"],
+    #     original_input_keys=["X (m)", "Y (m)", "Z (m)"],
+    #     desired_output_keys=["u", "v", "w", "p"],
+    #     original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
+    # )
+
     input_bend, output_bend, nr_points = get_data(
-        df_path= os.path.join(data_path, f"U0{key}_RealisticData.csv"),
+        df_path= os.path.join(data_path, f"U0{key}_Laminar_train.csv"),
         desired_input_keys=["x", "y", "z"],
         original_input_keys=["X (m)", "Y (m)", "Z (m)"],
         desired_output_keys=["u", "v", "w", "p"],
         original_output_keys=["Velocity[i] (m/s)", "Velocity[j] (m/s)", "Velocity[k] (m/s)"],
     )
-
     
     
     data_points = 100
