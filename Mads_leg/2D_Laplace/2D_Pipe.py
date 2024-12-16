@@ -69,14 +69,14 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(Inlet, "inlet")
     
     # Outlet
-    # Outlet = PointwiseBoundaryConstraint(
-    #     nodes=nodes,
-    #     geometry=Pipe,
-    #     outvar={"p": 0},
-    #     batch_size=cfg.batch_size.Inlet,
-    #     criteria= Eq(x, 0.0),
-    # )
-    # Pipe_domain.add_constraint(Outlet, "outlet")
+    Outlet = PointwiseBoundaryConstraint(
+        nodes=nodes,
+        geometry=Pipe,
+        outvar={"phi__x": -1.0},
+        batch_size=cfg.batch_size.Inlet,
+        criteria= Eq(x, 0.0),
+    )
+    Pipe_domain.add_constraint(Outlet, "outlet")
     
     # Define the boundaries for our bend
     Outer_bend = PointwiseBoundaryConstraint(

@@ -20,8 +20,8 @@ defaults :
       - fully_connected
   - scheduler: tf_exponential_lr
   - optimizer: adam
-  # - loss: sum
-  - loss: soft_adapt
+  - loss: sum
+  # - loss: soft_adapt
   # - loss: relobralo
   # - loss: lr_annealing
   - _self_

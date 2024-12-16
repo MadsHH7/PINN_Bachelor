@@ -7,17 +7,11 @@ class LaplaceEquation(PDE):
     Laplace Equation
 
     Parameters
-    ==========
-    p : float describing pressure [Pa]
-    
+    ==========    
     rho : float describing density of the fluid
 
     dim : int describing dimension    
 
-    Examples
-    ========
-    >>> we = 
-    >>> we.
     """
     name = "LaplaceEquation"
 
@@ -35,17 +29,10 @@ class LaplaceEquation(PDE):
 
         # Velocity components
         phi = Function("phi")(*input_variables)
-        # u = Function("u")(*input_variables)
-        # v = Function("v")(*input_variables)
         u = phi.diff(x)
         v = phi.diff(y)
         ux = u.diff(x)      
-        # uy = u.diff(y)
-        vy = v.diff(y)     
-        # vx = v.diff(x)
-        
-        # Pressure component
-        # p = Function("p")(*input_variables)
+        vy = v.diff(y)
         
         # Set equations
         self.equations = {}
@@ -53,12 +40,15 @@ class LaplaceEquation(PDE):
         self.equations["continuity"] = (
             ux + vy
         )
-        # self.equations["irrotational"] = (
-        #     vx - uy
-        # )
+        self.equations["normal_x"] = (
+            u
+        )
+        self.equations["normal_y"] = (
+            v
+        )
         self.equations["normal_circle_outer"] = (
-            (u * (-x/3.0) + v * (-y/3.0))
+            -(u * (-x/3.0) + v * (-y/3.0))
         )
         self.equations["normal_circle_inner"] = (
-            -(u * (-x) + v * (-y)) 
+            (u * (-x) + v * (-y)) 
         )
