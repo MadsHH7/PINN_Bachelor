@@ -12,8 +12,6 @@ class LaplaceEquation(PDE):
     
     rho : float describing density of the fluid
 
-    c : float describing the constant pressure we wish to apply
-
     dim : int describing dimension    
 
     Examples
@@ -23,7 +21,7 @@ class LaplaceEquation(PDE):
     """
     name = "LaplaceEquation"
 
-    def __init__(self, rho=1, c=1.5, dim=2):
+    def __init__(self, rho=1, dim=2):
         # Set params
         self.dim = dim
 
@@ -36,26 +34,31 @@ class LaplaceEquation(PDE):
             input_variables.pop("y")
 
         # Velocity components
-        u = Function("u")(*input_variables)
-        v = Function("v")(*input_variables)
+        phi = Function("phi")(*input_variables)
+        # u = Function("u")(*input_variables)
+        # v = Function("v")(*input_variables)
+        u = phi.diff(x)
+        v = phi.diff(y)
+        ux = u.diff(x)      
+        # uy = u.diff(y)
+        vy = v.diff(y)     
+        # vx = v.diff(x)
         
         # Pressure component
-        p = Function("p")(*input_variables)
+        # p = Function("p")(*input_variables)
         
         # Set equations
         self.equations = {}
+
         self.equations["continuity"] = (
-            u.diff(x, 1) + v.diff(y, 1)
+            ux + vy
         )
-        self.equations["irrotational"] = (
-            v.diff(x, 1) - u.diff(y, 1)
-        )
-        self.equations["bernoulli"] = (
-            ((u**2 + v**2) / 2) + p/rho - c
-        )
+        # self.equations["irrotational"] = (
+        #     vx - uy
+        # )
         self.equations["normal_circle_outer"] = (
-            (u * (x) + v * (y)) / 3.0
+            (u * (-x/3.0) + v * (-y/3.0))
         )
         self.equations["normal_circle_inner"] = (
-            -(u * (x) + v * (y)) 
+            -(u * (-x) + v * (-y)) 
         )

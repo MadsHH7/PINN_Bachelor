@@ -46,6 +46,7 @@ batch_size:
   NoSlip: 100
   Interior: 1000
   Inlet: 100
+  BC: 250
 
 graph:
   func_arch: true
