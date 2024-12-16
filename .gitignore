@@ -7,8 +7,6 @@ batch_outputs/
 
 batch_output/
 
-Results/
-
 *.sh
 
 __pycache__/
