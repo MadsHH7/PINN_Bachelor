@@ -21,8 +21,8 @@ defaults :
   # - scheduler: tf_exponential_lr
   - scheduler: cosine_annealing_warm_restarts
   - optimizer: adam
-  # - loss: sum
-  - loss: soft_adapt
+  - loss: sum
+  # - loss: soft_adapt
   - _self_
   
 # scheduler:
