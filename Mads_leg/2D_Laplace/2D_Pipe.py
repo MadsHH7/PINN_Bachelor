@@ -23,17 +23,18 @@ pi = float(pi)
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
     # Make equation
-    lp = LaplaceEquation(dim=2, c=0.5)
+    lp = LaplaceEquation(dim=2)
 
     # Create network
     flow_net = instantiate_arch(
         input_keys=[Key("x"), Key("y")],    
-        output_keys=[Key("u"), Key("v"), Key("p")],
+        # output_keys=[Key("u"), Key("v")],#, Key("p")],
+        output_keys=[Key("phi")],
         cfg=cfg.arch.fully_connected,
     )
     nodes = lp.make_nodes() + [flow_net.make_node(name="flow_network")]
 
-    # Make geometry
+    # Make geometry 
     x, y = Symbol("x"), Symbol("y")
     
     # Define and cut our circle
@@ -61,7 +62,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=Pipe,
-        outvar={"u": 0.0, "v": 1.0},
+        outvar={"phi__x": 0.0, "phi__y": 1.0},
         batch_size=cfg.batch_size.Inlet,
         criteria= Eq(y, 0.0),
     )
@@ -71,7 +72,7 @@ def run(cfg: ModulusConfig) -> None:
     Outlet = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=Pipe,
-        outvar={"p": 0},
+        outvar={"phi__x": -1.0},
         batch_size=cfg.batch_size.Inlet,
         criteria= Eq(x, 0.0),
     )
@@ -103,7 +104,7 @@ def run(cfg: ModulusConfig) -> None:
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=Pipe,
-        outvar={"continuity": 0, "irrotational": 0, "bernoulli": 0}, 
+        outvar={"continuity": 0},#, "irrotational": 0},#, "bernoulli": 0}, 
         batch_size=cfg.batch_size.Interior,
         # lambda_weighting={
         #     "continuity": Symbol("sdf"),
@@ -119,14 +120,14 @@ def run(cfg: ModulusConfig) -> None:
     ## Add validator
     # Find the validation data
     val_df = os.path.join(data_path, "LaplaceBend2D.csv")
-    mapping = {"u": "u", "v": "v", "x": "x", "y": "y"}
+    mapping = {"u": "phi__x", "v": "phi__y", "x": "x", "y": "y"}
     val_var = csv_to_dict(to_absolute_path(val_df), mapping)
     
     val_invar_numpy = {
         key: value for key, value in val_var.items() if key in ["x", "y"]
     }
     val_outvar_numpy = {
-        key: value for key, value in val_var.items() if key in ["u", "v"]
+        key: value for key, value in val_var.items() if key in ["phi__x", "phi__y"]
     }
     
     validator = PointwiseValidator(

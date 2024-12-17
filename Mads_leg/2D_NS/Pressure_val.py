@@ -89,14 +89,15 @@ def run(cfg: ModulusConfig) -> None:
     geo = geo.scale(scaling)
     
     # Make constraints
-    in_vel = 0.01
+    in_vel = 0.1
     
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry = geo,
-        outvar = {"u": 0.0, "v": in_vel},
+        outvar = {"u": in_vel, "v": 0.0},
         batch_size = cfg.batch_size.Inlet,
         criteria = Eq(x, 0.0),
+        quasirandom=True,
     )
     Pipe_domain.add_constraint(Inlet, "Inlet")
     
@@ -108,6 +109,7 @@ def run(cfg: ModulusConfig) -> None:
         outvar = {"p": 0.0},
         batch_size = cfg.batch_size.Inlet,
         criteria = Eq(y, y_max),
+        quasirandom=True,
     )
     Pipe_domain.add_constraint(Outlet, "Outlet")
 
@@ -121,7 +123,8 @@ def run(cfg: ModulusConfig) -> None:
         criteria = And(
             x > 0.0,
             y < y_max,
-        )
+        ),
+        quasirandom=True,
     )
     Pipe_domain.add_constraint(Walls, "Walls")
     
@@ -131,14 +134,16 @@ def run(cfg: ModulusConfig) -> None:
         geometry = geo,
         outvar = {"continuity": 0.0, "momentum_x": 0.0, "momentum_y": 0.0},
         batch_size = cfg.batch_size.Interior,
+        quasirandom=True,
     )
     Pipe_domain.add_constraint(Interior, "Interior")
     
-    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
-    # data_path = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
-    if os.path.exists(to_absolute_path(data_path)):
+    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/bend_data_mvel001.csv/"
+    data_path_train = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel01_train.csv/"
+    data_path_val = f"/home/madshh7/PINN_Bachelor/Data/2D/bend_data_mvel01_validation.csv/"
+    if os.path.exists(to_absolute_path(data_path_train)):
         input, output, nr_points = get_data(
-            df_path= to_absolute_path(data_path),
+            df_path= to_absolute_path(data_path_train),
             desired_input_keys=["x", "y"],
             original_input_keys=["X (m)", "Y (m)"],
             desired_output_keys=["u", "v", "p"],
@@ -156,9 +161,8 @@ def run(cfg: ModulusConfig) -> None:
         
         ## Add validator
         # Find the validation data
-        val_df = data_path
         mapping = {"Pressure (Pa)": "p", "X (m)": "x", "Y (m)": "y", "Velocity[j] (m/s)": "v", "Velocity[i] (m/s)": "u"}
-        val_var = csv_to_dict(to_absolute_path(val_df), mapping)
+        val_var = csv_to_dict(to_absolute_path(data_path_val), mapping)
         
         val_invar_numpy = {
             key: value for key, value in val_var.items() if key in ["x", "y"]

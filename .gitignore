@@ -9,4 +9,6 @@ batch_output/
 
 *.sh
 
+Results/
+
 __pycache__/
