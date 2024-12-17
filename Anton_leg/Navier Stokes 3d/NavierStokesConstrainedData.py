@@ -84,9 +84,7 @@ def run(cfg: ModulusConfig) -> None:
     inlet_pipe_length_nd = tuple(map(lambda x: nd.ndim(x), inlet_pipe_length_range_initial))
     outlet_pipe_length_nd = tuple(map(lambda x: nd.ndim(x), outlet_pipe_length_range_intial))
 
-    inlet_u_nd = nd.ndim(inlet_u)
-    inlet_v_nd = nd.ndim(inlet_v)
-    inlet_w_nd = nd.ndim(inlet_w)
+    
 
     noslip_u_nd = nd.ndim(noslip_u)
     noslip_v_nd = nd.ndim(noslip_v)
@@ -110,10 +108,15 @@ def run(cfg: ModulusConfig) -> None:
 
     # Create network
     flow_net = instantiate_arch(
-        input_keys = [Key("x"), Key("y"), Key("z")],
+        input_keys = [Key("x"), Key("y"), Key("z"),Key("inlet_vel")],
         output_keys = [Key("u"), Key("v"), Key("w"), Key("p")],
         cfg = cfg.arch.fully_connected,
     )
+
+
+    inlet_vel = Symbol("inlet_vel")
+    inlet_vel_nd = nd.ndim(inlet_vel)
+
     
     # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + normal_dot_vel.make_nodes()
     nodes = (ns.make_nodes()
@@ -152,7 +155,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.inlet_pipe,
-        outvar = {"u": inlet_u_nd, "v": inlet_v_nd, "w":inlet_w_nd},
+        outvar = {"u": inlet_vel_nd, "v": 0, "w":0},
         batch_size= cfg.batch_size.Inlet,
         # criteria=Eq(y,Pipe.inlet_center[1]),
         quasirandom=True,

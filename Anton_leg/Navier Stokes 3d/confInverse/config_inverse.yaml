@@ -27,7 +27,7 @@ scheduler:
   decay_steps: 4000
 
 arch:
-  branch:
+  fully_connected:
     nr_layers: 3
     layer_size: 128
     activation_fn: "silu"
