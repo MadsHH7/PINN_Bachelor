@@ -62,7 +62,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=Pipe,
-        outvar={"phi__x": 0.0, "phi__y": 1.0},
+        outvar={"phi__y": 1.0},
         batch_size=cfg.batch_size.Inlet,
         criteria= Eq(y, 0.0),
     )
@@ -115,8 +115,8 @@ def run(cfg: ModulusConfig) -> None:
     Pipe_domain.add_constraint(interior, "interior")
     
     # Add validator
-    # data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
-    data_path = f"/home/madshh7/PINN_Bachelor/Data/2D"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/Data/2D/"
+    # data_path = f"/home/madshh7/PINN_Bachelor/Data/2D"
     ## Add validator
     # Find the validation data
     val_df = os.path.join(data_path, "LaplaceBend2D.csv")
