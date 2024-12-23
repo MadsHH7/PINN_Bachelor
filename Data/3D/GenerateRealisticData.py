@@ -144,8 +144,8 @@ length = df.shape[0]
 inlet_velocity = 0.1
 in_vel = [inlet_velocity] * length
 
-df2 = df.assign(inlet_vel = in_vel)
-print(df2.head())
+# df2 = df.assign(inlet_vel = in_vel)
+# print(df2.head())
 
 
 
@@ -153,10 +153,10 @@ print(df2.head())
 
 sample_points = 500
 
-bend_inlet = df2.iloc[bend_inlet_index]
-bend_outlet = df2.iloc[bend_outlet_index]
-inlet = df2.iloc[inlet_mid_index]
-outlet = df2.iloc[outlet_mid_index]
+bend_inlet = df.iloc[bend_inlet_index]
+bend_outlet = df.iloc[bend_outlet_index]
+inlet = df.iloc[inlet_mid_index]
+outlet = df.iloc[outlet_mid_index]
 
 bend_inlet = bend_inlet.sample(n=sample_points,random_state=42)
 bend_outlet = bend_outlet.sample(n=sample_points,random_state=42)
@@ -166,11 +166,11 @@ outlet = outlet.sample(n=sample_points,random_state=42)
 sensor_data = pd.concat([bend_inlet,bend_outlet,inlet,outlet])
 
 
-validation_df = df2.drop(sensor_data.index)
+validation_df = df.drop(sensor_data.index)
 
 
 
-sensor_data.to_csv(f'U0pt{key}_2000pts_InletVelTrain.csv', index=False)
-validation_df.to_csv(f'U0pt{key}_2000pts_InletVelValidation.csv', index=False)
+sensor_data.to_csv(f'U0pt{key}_2000pts_Train.csv', index=False)
+validation_df.to_csv(f'U0pt{key}_2000pts_Validation.csv', index=False)
 
 # /zhome/e3/5/167986/Desktop/PINN/bin/python /zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/3D/GenerateRealisticData.py

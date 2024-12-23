@@ -77,7 +77,7 @@ def run(cfg: ModulusConfig) -> None:
     )
 
     # Scaled geometry
-    inlet_vel_nd =  nd.ndim(inlet_u)
+    # inlet_vel_nd =  nd.ndim(inlet_u)
     bend_angle_nd = bend_angle_range_intial # I did not add any dimension to the bend
     radius_pipe_nd = tuple(map(lambda x: nd.ndim(x), radius_pipe_range_inital))
     radius_bend_nd = tuple(map(lambda x: nd.ndim(x), radius_bend_range_inital))
@@ -114,8 +114,7 @@ def run(cfg: ModulusConfig) -> None:
     )
 
 
-    inlet_vel = Symbol("inlet_vel")
-    inlet_vel_nd = nd.ndim(inlet_vel)
+  
 
     
     # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + normal_dot_vel.make_nodes()
@@ -131,6 +130,7 @@ def run(cfg: ModulusConfig) -> None:
     
     # Make geometry
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
+    inlet_vel = Symbol("inlet_vel")
 
     radius = radius_pipe_nd[0]
     
@@ -155,7 +155,7 @@ def run(cfg: ModulusConfig) -> None:
     Inlet = PointwiseBoundaryConstraint(
         nodes = nodes,
         geometry= Pipe.inlet_pipe,
-        outvar = {"u": inlet_vel_nd, "v": 0, "w":0},
+        outvar = {"u": 0.1, "v": 0, "w":0},
         batch_size= cfg.batch_size.Inlet,
         # criteria=Eq(y,Pipe.inlet_center[1]),
         quasirandom=True,
@@ -212,7 +212,7 @@ def run(cfg: ModulusConfig) -> None:
 
 
     all_planes = Pipe.inlet_pipe_planes + Pipe.bend_planes + Pipe.outlet_pipe_planes
-    mass_flow_rate = pi*radius**2 * inlet_vel_nd # Unit is m^2/s
+    mass_flow_rate = pi*radius**2 * 1 #inlet_vel_nd # Unit is m^2/s
 
     for i,plane in enumerate(all_planes):
         
@@ -331,3 +331,8 @@ if __name__ == "__main__":
 # Husk at fjerne disconuitet ved inlet.
 # Man kan ændre learning rate ved at stoppe trænningen og ændre navnet på optime_checkpoint
 # Den vil køre videre med samme model, men bruge den nye learning rate.
+
+# /zhome/e3/5/167986/Desktop/PINN/bin/python "/zhome/e3/5/167986/Desktop/PINN_Bachelor/Anton_leg/Navier Stokes 3d/NavierStokesConstrainedData.py"
+# 
+# 
+# 

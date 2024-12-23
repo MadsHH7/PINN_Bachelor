@@ -162,6 +162,7 @@ class PipeBend(Geometry):
         radius_pipe = Symbol("radius_pipe")
         inlet_pipe_length = Symbol("inlet_pipe_length")
         outlet_pipe_length = Symbol("outlet_pipe_length")
+        inlet_veloity = Symbol("inlet_velocity")
 
         # Define the dictionary of parameters for the parameterization.
         parameters = {
@@ -170,6 +171,7 @@ class PipeBend(Geometry):
             radius_pipe: radius_pipe_range,
             inlet_pipe_length: inlet_pipe_length_range,
             outlet_pipe_length: outlet_pipe_length_range,
+            inlet_veloity: inlet_velocity_range,
         }
 
         pr = Parameterization(parameters)
