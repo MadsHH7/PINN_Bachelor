@@ -55,8 +55,8 @@ translation= ([
 # df = df.iloc[domain_index]
 
 
-train_df = df.sample(n = 2000, random_state=42)
+train_df = df.sample(n = 500, random_state=42)
 validation_df = df.drop(train_df.index)
 
-train_df.to_csv(f'U0pt{key}_2000_Uniform_Train.csv', index=False)
-validation_df.to_csv(f'U0pt{key}_2000_Uniform_Validation.csv', index=False)
+train_df.to_csv(f'U0pt{key}_Uni_0.5K_Train.csv', index=False)
+validation_df.to_csv(f'U0pt{key}_Uni_0.5K_Validation.csv', index=False)
