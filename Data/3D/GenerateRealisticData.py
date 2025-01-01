@@ -72,6 +72,7 @@ m_o_c = (outlet_c[0]-0.5*outlet_pipe_length[0]*n_outlet[0],
          outlet_c[2]-0.5*outlet_pipe_length[0]*n_outlet[2])
 
 print("Bend Inlet Center: ", b_i_c)
+print("Bend Outlet Vector: ", n_outlet)
 print("Bend Outlet Cetner: ", b_o_c)
 count = 0
 Pipe.inlet
@@ -170,7 +171,7 @@ validation_df = df.drop(sensor_data.index)
 
 
 
-sensor_data.to_csv(f'U0pt{key}_NotUni_2K_Train.csv', index=False)
-validation_df.to_csv(f'U0pt{key}_NotUni_2K_Validation.csv', index=False)
+# sensor_data.to_csv(f'U0pt{key}_NotUni_2K_Train.csv', index=False)
+# validation_df.to_csv(f'U0pt{key}_NotUni_2K_Validation.csv', index=False)
 
 # /zhome/e3/5/167986/Desktop/PINN/bin/python /zhome/e3/5/167986/Desktop/PINN_Bachelor/Data/3D/GenerateRealisticData.py
