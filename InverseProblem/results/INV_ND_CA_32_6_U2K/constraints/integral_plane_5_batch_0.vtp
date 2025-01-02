@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <PolyData>
+    <Piece NumberOfPoints="100" NumberOfVerts="100" NumberOfLines="0" NumberOfStrips="0" NumberOfPolys="0">
+      <PointData>
+        <DataArray type="Float32" Name="normal_x" format="binary" RangeMin="-0.9695879220962524" RangeMax="-0.9695879220962524">
+          AQAAAACAAACQAQAAEgAAAA==eAF7ZVax/9UoHjRhAABaden9
+        </DataArray>
+        <DataArray type="Float32" Name="normal_y" format="binary" RangeMin="0.24474334716796875" RangeMax="0.24474334716796875">
+          AQAAAACAAACQAQAAEgAAAA==eAFjmFdlxzCKB00YAACL6IWZ
+        </DataArray>
+        <DataArray type="Float32" Name="normal_z" format="binary" RangeMin="0" RangeMax="0">
+          AQAAAACAAACQAQAADgAAAA==eAFjYBgFgykEAAGQAAE=
+        </DataArray>
+        <DataArray type="Float32" Name="area" format="binary" RangeMin="0.00039999998989515007" RangeMax="0.00039999998989515007">
+          AQAAAACAAACQAQAAEgAAAA==eAET337RUnwUD5owAABYMLhh
+        </DataArray>
+        <DataArray type="Float32" Name="bend_angle" format="binary" RangeMin="1.3235414028167725" RangeMax="1.3235414028167725">
+          AQAAAACAAACQAQAAEgAAAA==eAE7l7nS/twoHjRhAABygtQd
+        </DataArray>
+        <DataArray type="Float32" Name="radius_bend" format="binary" RangeMin="0.20000000298023224" RangeMax="0.20000000298023224">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e8bH7uwoHjRhAADRWdWt
+        </DataArray>
+        <DataArray type="Float32" Name="radius_pipe" format="binary" RangeMin="0.10000000149011612" RangeMax="0.10000000149011612">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e+aM7dlRPGjCAACV5gdY
+        </DataArray>
+        <DataArray type="Float32" Name="inlet_pipe_length" format="binary" RangeMin="0.20000000298023224" RangeMax="0.20000000298023224">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e8bH7uwoHjRhAADRWdWt
+        </DataArray>
+        <DataArray type="Float32" Name="outlet_pipe_length" format="binary" RangeMin="1" RangeMax="1">
+          AQAAAACAAACQAQAAEQAAAA==eAFjYGiwZxjFgyYMADY6Sp0=
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="binary" RangeMin="0.10255616889027777" RangeMax="0.3057293474929484">
+          AQAAAACAAACwBAAAfgQAAA==eAEN0I8/1HccB3DautRG63JC8iOcOh7IrO3B9/U+tz3EHv3gEJWkH1KR/B7W2i45XBz3qx9MCV09yrpLktF9bLWxVVZqIYn2sPaoROXHqoe12p5/wlOgk4NWFFBW7F0ufqEEcaFi4kmNTMvucDWneuAhqGUNIidYHl9AwR5q7vbZbPSsziSfjL+4iopUKFem0FjIXtSESiDZJabYlXPwgD/JDVwcw1S/jtUX7MOQJJ+6VZqAk03hSG5aRY0VOtbgHoq8gGUUfdmVed3cC5VGRlaTkdyh5tkYjLaidNH1wLYRR5xLXEDXLrWxuF/NcND2LQbmFgUahXc4X+se7IvoMaX5q/FBVzkpM3pNidEqeEyWUX5dBecm3g636Ynk01sPk+cTrnz4ET6/0MqS9A544TafNt/IgV6wBDO2+FB2nMHkXaSA/qNi4qWVsz7xNHibmZMp/3vTnq3roQ1dR08mhOhqHOAatP2gHiFahp1Amx1J32HA2ZQoRCVE0K7grbjh/CVGW3NI29zIwvZ3cmG6qxgf8ORcCxSo9Ssm/YY8bhlfgXuXiuiIrBRTMYX41EpOR3iJzOLhO1hVN43uxw5x0uslWJKzn9qPt2F8eRbiJ9OJl5fE5fjZ4qnJhiL0ldhrKYL7zkUUmzNsklUtguGNkFb3R7BHY2Ww1iopLXUxlrdrUb1OQ/yEA6j8wx57EuzotN1l9vF5JVLXlNIDIw8FEinGxGGkn2pgdZnz8PStgBYOylGRrAG9q6a4ombWVSYHL6SAHPoOQgQFYkaKaKuFKw74aSG9oqaAShvGFW6AbcJ6WurljaziMtSKlLTb3AWv7Txh+cViyi3o4Mw3cjCoA6hUvBguH/7DVV19BamiDnMQiZqlUkqf2Ya1SSEYlQWTw3f1bJtPNvTdGcRfaM7Z9wxyfo334OX5CeubWAJ7sS+ZUQnz3aHA2Lxi+vNUO35ShuOxchV99Y2x1SL4LVd06zXCjLUYS3nJGaz+RpD7JVT0F+KoSk4ZAnvTgVn5SLkmo8PBa1Ge6YXwThGNB8Qzp+chSJq+jF47VrPAl1FQjkSQrsOJedC/3LGuKYg6f0BTiyOE/guoD+5Ik8+Dao4NnYgpYS+OfYbuHyXEqw+B2ZZZWD97Jo2IDezb6PmI67OjR6kqUwS/l8ub1o2s6K/Z7eH/Pw8X0/L3N5quPC/DK7WSqm1aEOwci1zeWprh8jOENhpUGVXUZcvY4TNLETTqT+d2VEMjkCLZOoyuP2i+ePs9V5ze7UIjNyIxU5ALr/PZJLHtNU0JlSjtLKHujiqYnLQ4cUFNN+sU7Fm4Bt2PVXTXXYf8F2swfSiaYp55cqEDOzFxKImC6i3YvSwVIvnllCv25dSVmzCYFk8vV1jgqGEHbNO3UfjDI4Fxv8uw0fsbGqgJCjA6CNBimEvrfpmPu5YJcBvcRL+NN7HRJ3MxJOPTyYlW3L9ljiCdGZ1Jf8O16zIxSek0+9Y5Zt1XCOcyObnnNzMPh2Q492+nFNbBBuv9kfHcj4qjmtl/hP8KXg==
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              0.10255616889
+            </Value>
+            <Value index="1">
+              0.30572934749
+            </Value>
+          </InformationKey>
+        </DataArray>
+      </Points>
+      <Verts>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="0" RangeMax="99">
+          AQAAAACAAAAgAwAArwAAAA==eAEtxdciAgAAAMCQWSFbJCuzsjNDiuyMyo7y///gwd3LBQL/WtzqNgfd7g53usvd7nHIYUfc6z73O+oBD3rIwx7xqMc87pgnPOm4p5zwtGc86znPO+kFL3rJy17xqlNOO+M1r3vDm97ytnec9a73vO8DH/rIOR/7xKfO+8wFF33uC5d86Stf+8a3vvO9y37wo5/87IqrrvnFr37zuz/86S/X/e0fN9z0r/8AXBwTVw==
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1" RangeMax="100">
+          AQAAAACAAAAgAwAArwAAAA==eAEtxdciAgAAAEAjkYRskazskpUtFJGRUbYI//8NHrp7ueamhha3OuA2B93uDofc6bC7HHG3e9zrqPvc7wEPesjDHvGoYx7zuOOecMKTnvK0ZzzrpOc87wUvesnLXnHKaa864zWve8Ob3nLW297xrve87wMf+sg5H/vEp8674DOfu+gLX7rkK1/7xrcu+873fvCjK676yc9+8avf/O4Pf7rmL3+77h//+s//+ewTuw==
+        </DataArray>
+      </Verts>
+      <Lines>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Lines>
+      <Strips>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Strips>
+      <Polys>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Polys>
+    </Piece>
+  </PolyData>
+</VTKFile>

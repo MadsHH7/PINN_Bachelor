@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<VTKFile type="PolyData" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">
+  <PolyData>
+    <Piece NumberOfPoints="100" NumberOfVerts="100" NumberOfLines="0" NumberOfStrips="0" NumberOfPolys="0">
+      <PointData>
+        <DataArray type="Float32" Name="normal_x" format="binary" RangeMin="-0.9695879220962524" RangeMax="-0.9695879220962524">
+          AQAAAACAAACQAQAAEgAAAA==eAF7ZVax/9UoHjRhAABaden9
+        </DataArray>
+        <DataArray type="Float32" Name="normal_y" format="binary" RangeMin="0.24474334716796875" RangeMax="0.24474334716796875">
+          AQAAAACAAACQAQAAEgAAAA==eAFjmFdlxzCKB00YAACL6IWZ
+        </DataArray>
+        <DataArray type="Float32" Name="normal_z" format="binary" RangeMin="0" RangeMax="0">
+          AQAAAACAAACQAQAADgAAAA==eAFjYBgFgykEAAGQAAE=
+        </DataArray>
+        <DataArray type="Float32" Name="area" format="binary" RangeMin="0.00039999998989515007" RangeMax="0.00039999998989515007">
+          AQAAAACAAACQAQAAEgAAAA==eAET337RUnwUD5owAABYMLhh
+        </DataArray>
+        <DataArray type="Float32" Name="bend_angle" format="binary" RangeMin="1.3235414028167725" RangeMax="1.3235414028167725">
+          AQAAAACAAACQAQAAEgAAAA==eAE7l7nS/twoHjRhAABygtQd
+        </DataArray>
+        <DataArray type="Float32" Name="radius_bend" format="binary" RangeMin="0.20000000298023224" RangeMax="0.20000000298023224">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e8bH7uwoHjRhAADRWdWt
+        </DataArray>
+        <DataArray type="Float32" Name="radius_pipe" format="binary" RangeMin="0.10000000149011612" RangeMax="0.10000000149011612">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e+aM7dlRPGjCAACV5gdY
+        </DataArray>
+        <DataArray type="Float32" Name="inlet_pipe_length" format="binary" RangeMin="0.20000000298023224" RangeMax="0.20000000298023224">
+          AQAAAACAAACQAQAAEgAAAA==eAE7e8bH7uwoHjRhAADRWdWt
+        </DataArray>
+        <DataArray type="Float32" Name="outlet_pipe_length" format="binary" RangeMin="1" RangeMax="1">
+          AQAAAACAAACQAQAAEQAAAA==eAFjYGiwZxjFgyYMADY6Sp0=
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" Name="Points" NumberOfComponents="3" format="binary" RangeMin="0.22726278178372072" RangeMax="0.3664063244844795">
+          AQAAAACAAACwBAAAiAQAAA==eAEFwQsw1HkcAHCP3fVMoV3yZvdw1qszN4X/71udvGbTnVdCOSJabewOHVddJ5XbzbBqe9gVS3dKpQh3XP1/3x5STlOjoe7OcDVX18N0PVYdovY+n6wKAarUcjivrCHB5ZYY7XgY5H/lkbq3XAyw00Lo6mOs2GCK0cZmcK00pfMJAhSlKcDweoyZGOJif7YWOJnxtLnNHPt1jZAo2sbKesV4bK8bDPKTmY7tSzDx9zx4OWlBvz/pjJ62W8DMWsOc/NkNs6bTYE5fT/rfuKOVYzJ4av5l9kfZoZVWCaSmJvInLyON6W2F9Go1ObZRiK/qCfT+YGQ8Lglxqy8Dy7QqNu2uNe6QqUGmu3/RVGCNtQ/qQP/3BOOUa4PXJbXwWUIlyT3ojW59q6HIu4u4JNvjY2UlGPJ2kQOtlij7VQMffS4z9vuNdDi5FeYGbzFxz4RYURIJpxJuX3q1wQVDo3IgM0hJSqWWqAg9DBEDS4gLccE1V3Ngj8MvtGDEDD1X6eHewBWyMX4hbjxUBaYDXeTaH7N0qeEMeH2zghjmxSiWu8Lk7u007o4nMt0SaNlXRW7FumNuTyqM7zxBFlNnPN1VABt+S6cpf9pieX41dI7qqCrDBvs21MJifQQbZ+DieQctBEtL6WixHUatUkJodQXdLXLHyJXrYP2Rd4ykwx/Tq/xBZrhJ/hPOUfGZ03BiSxY5pzLDgBE9tHaUMiFoipDfAlL2Aztn8p5mDp2B6YoVZIWrCI+ejgDdx11U/pUbJinToajMmlR+Z41KhzpwcrIlPNYJOee2QktIHimvs8PjJkpgeZQ5+dIL7zKxUDieGGGu5mO3pBQwkUcPmhmp3b1WeJUdSH5cOk8d9W2wXNoemfpShKmbl4HHcB8Rl9uguU8thLXNsrPvAnBmjyc0da4nw18IcPNeBax82EXHPnjg1Iu1cEWyiRQzflgXFQwm5AgFdw+8kZ8EK3eH06HbzlgiLwBhf88lNtwKH2gOgfRhHelMEWIYS2A23YGmLvfDO8nBoB9ZRN/+Y4kj4RpIuVBNzsWJMSXCA+RJRWT78QU49UgF1dF89kQ2F0PCdLCAZJJunhuWtGdAvE8UnenyRvuw1eCUcZlG53vj803RcMC2ke4McMFFNpvgkXQ6UnKDg8/yGmCSJFDj0GKElDIINRbQQI01Nj5Vg9SSR0fXCzAkUAGZJjXMtzOOGHt0B3gWqui01A+D1EHwpqmYPs23x7M5lcAf7COD3ED0T3CFCp6WxObOUOe8dmiaaib4hIPNogZoPKCjzla+KOSGwVVZBxU4e+Op+hjIVt+kMRw/tPEJgU9khYz3hD/2D/sBeZ9DORZc7Hmsgy/XXafd0iAU3eIDP6KK8pqE2K5l4CInht6f8sVPc0NAEZ1CLWot8cNTDYwfbyGQPk/HytpAqGhjs6654LoLX0PB5w1U4GqHXs+VkBakYZqLBThxVw6vdfnU0C/EYnMGzj7sJS0T5jiwtBEUnSV0X5kFti88CsqZXqpaK0TNKIE1ymBmWY4Xem2Lh7MvnrD/AwvmIPg=
+          <InformationKey name="L2_NORM_RANGE" location="vtkDataArray" length="2">
+            <Value index="0">
+              0.22726278178
+            </Value>
+            <Value index="1">
+              0.36640632448
+            </Value>
+          </InformationKey>
+        </DataArray>
+      </Points>
+      <Verts>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="0" RangeMax="99">
+          AQAAAACAAAAgAwAArwAAAA==eAEtxdciAgAAAMCQWSFbJCuzsjNDiuyMyo7y///gwd3LBQL/WtzqNgfd7g53usvd7nHIYUfc6z73O+oBD3rIwx7xqMc87pgnPOm4p5zwtGc86znPO+kFL3rJy17xqlNOO+M1r3vDm97ytnec9a73vO8DH/rIOR/7xKfO+8wFF33uC5d86Stf+8a3vvO9y37wo5/87IqrrvnFr37zuz/86S/X/e0fN9z0r/8AXBwTVw==
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1" RangeMax="100">
+          AQAAAACAAAAgAwAArwAAAA==eAEtxdciAgAAAEAjkYRskazskpUtFJGRUbYI//8NHrp7ueamhha3OuA2B93uDofc6bC7HHG3e9zrqPvc7wEPesjDHvGoYx7zuOOecMKTnvK0ZzzrpOc87wUvesnLXnHKaa864zWve8Ob3nLW297xrve87wMf+sg5H/vEp8674DOfu+gLX7rkK1/7xrcu+873fvCjK676yc9+8avf/O4Pf7rmL3+77h//+s//+ewTuw==
+        </DataArray>
+      </Verts>
+      <Lines>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Lines>
+      <Strips>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Strips>
+      <Polys>
+        <DataArray type="Int64" Name="connectivity" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="binary" RangeMin="1e+299" RangeMax="-1e+299">
+          AAAAAACAAAAAAAAA
+        </DataArray>
+      </Polys>
+    </Piece>
+  </PolyData>
+</VTKFile>
