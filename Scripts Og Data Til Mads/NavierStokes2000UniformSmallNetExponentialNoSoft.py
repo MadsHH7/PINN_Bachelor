@@ -96,8 +96,11 @@ def run(cfg: ModulusConfig) -> None:
 
 
     # Make equation
-    ze = ZeroEquation(nu = nd.ndim(nu), max_distance=0.1 , dim = 3, time = False)
-    ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
+    # ze = ZeroEquation(nu = nd.ndim(nu), max_distance=0.1 , dim = 3, time = False)
+    # ns = NavierStokes(nu = ze.equations["nu"], rho = nd.ndim(rho), dim = 3, time = False)
+
+    # Test 
+    ns = NavierStokes(nu = nd.dim(nu), rho = nd.ndim(rho), dim = 3, time = False)
     # ns = NavierStokes(nu = 0.00002, rho = 500.0, dim = 3, time = False)
     # max_distance kan bruge signed_distance fields i stedet for radius
     # Betyder at hvert punkt i dit rum får en afstand til geometriens overfflade. Fortæller om du er inde eller uden for geomtrien, og hvor langt fra den du er.
@@ -117,7 +120,7 @@ def run(cfg: ModulusConfig) -> None:
     
     # nodes = ns.make_nodes() + [flow_net.make_node(name = "flow_network")] + normal_dot_vel.make_nodes()
     nodes = (ns.make_nodes()
-    +ze.make_nodes()
+    # +ze.make_nodes()
     + normal_dot_vel.make_nodes()
     + [flow_net.make_node(name = "flow_network")]
     + Scaler(["u","v","w","p"],

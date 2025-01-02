@@ -232,7 +232,7 @@ def run(cfg: ModulusConfig) -> None:
         )
         Pipe_domain.add_constraint(integral_continuity, f"integral_plane_{i}")
 
-    data_path = f"/zhome/e3/5/167986/Desktop/PINN_Bachelor/batch_output/InverseProblem/Data"
+    data_path = f"/zhome/e1/d/168534/Desktop/Bachelor_PINN/PINN_Bachelor/batch_outputs/Inverse/InverseProblem/Data"
     key = "pt1"
 
     input_bend, output_bend, nr_points = get_data(

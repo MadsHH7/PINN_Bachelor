@@ -2,7 +2,7 @@ import pandas as pd
 from sympy import cos, sin, pi
 import numpy as np
 
-key = "2"
+key = "001"
 pct_data = 5 / 100 # Split into 5% Data
 
 df = pd.read_csv(f'bend_data_mvel{key}.csv')

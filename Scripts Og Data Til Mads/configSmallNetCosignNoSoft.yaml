@@ -24,7 +24,7 @@ defaults :
   - loss: sum
   - _self_
 scheduler:
-  T_max: 1000000
+  T_max: 100000
   # T_mult: 2
   eta_min: 1e-7
   # T_0: 16
