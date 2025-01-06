@@ -2,6 +2,10 @@ import pandas as pd
 from sympy import cos, sin, pi
 import numpy as np
 
+"""
+Script is made using chatGPT 01 - 20.12.2024
+"""
+
 key = "001"
 pct_data = 5 / 100 # Split into 5% Data
 
