@@ -1,7 +1,9 @@
 .venv/
 
 *.sh
-batch_output\
+batch_output/
+InverseProblem/
+Results/
 
 __pycache__/
 
