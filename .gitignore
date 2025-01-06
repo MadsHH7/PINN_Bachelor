@@ -1,6 +1,7 @@
 .venv/
 
 *.sh
+batch_output\
 
 __pycache__/
 
