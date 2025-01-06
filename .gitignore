@@ -1,18 +1,6 @@
 .venv/
-tf/
-
-outputs/
-
-batch_outputs/
-
-batch_output/
 
 *.sh
 
-Results/
-
 __pycache__/
 
-Images/
-
-InverseProblem/
