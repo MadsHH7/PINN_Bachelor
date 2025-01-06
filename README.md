@@ -8,3 +8,7 @@ The data in the Navier_Stokes folders contain data supplied by FORCE Technology.
 $001 = 0.01$
 
 $U0pt1 = 0.1$
+
+
+The training_scripts contain all the scripts we ran in order to generate the final results, in the Navier_Stokes folders we have included a helper function "PINN_Helper", which was created and shared by Andreas Hallbäck, FORCE Technology.
+Likewise is pipe_bend_parameterized_geometry is used to create the geometry of our 3D pipe created and shared by Andreas Hallbäck, FORCE Technology.
