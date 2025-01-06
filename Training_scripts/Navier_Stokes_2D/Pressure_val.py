@@ -198,9 +198,3 @@ def run(cfg: ModulusConfig) -> None:
     
 if __name__ == "__main__":
     run()
-    # Paraview
-    # u*iHat + v*jHat
-    # "Velocity[i] (m/s)" * iHat + "Velocity[j] (m/s)" * jHat
-
-    # DTU HPC interactive
-    # sxm2sh
